@@ -63,15 +63,17 @@
   }
   .moduleflash.show{opacity:0.98; pointer-events:auto}
   .mf-eyebrow{font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); margin:0 0 10px; font-weight:700}
-  .mf-num{font-family:var(--mono); font-size:72px; font-weight:700; color:var(--accent); line-height:1; margin:0}
-  .mf-name{font-size:21px; font-weight:500; color:var(--ink); margin:12px 0 0; text-align:center; padding:0 32px; max-width:380px}
+  .mf-modline{font-size:18px; font-weight:500; color:var(--ink); margin:0; text-align:center; padding:0 32px}
+  .mf-preview{font-size:12.5px; color:var(--muted); margin:8px 0 0; text-align:center; padding:0 36px; max-width:340px; line-height:1.5}
+  .mf-countdown{font-family:var(--mono); font-size:88px; font-weight:700; color:var(--accent); line-height:1; margin-top:22px}
 </style>
 </head>
 <body>
 <div class="moduleflash" id="moduleFlash">
   <p class="mf-eyebrow">Modul startet</p>
-  <p class="mf-num" id="mfNum">01</p>
-  <p class="mf-name" id="mfName">Reflex-Einatmung</p>
+  <p class="mf-modline"><span id="mfNum">01</span> · <span id="mfName">Reflex-Einatmung</span></p>
+  <p class="mf-preview" id="mfPreview">Blitzartig einatmen, sofort auf sssssss ausatmen</p>
+  <p class="mf-countdown" id="mfCountdown">3</p>
 </div>
 <div class="wrap">
   <header>
@@ -106,32 +108,32 @@
 
 <script>
 const steps=[
-{name:"1 \u00b7 Reflex-Einatmung",desc:"Reflexartige Einatmung, sofort stabiler Luftfluss auf sssssss, kein Anlaufen.",dur:48,phases:[
+{name:"1 \u00b7 Reflex-Einatmung",desc:"Reflexartige Einatmung, sofort stabiler Luftfluss auf sssssss, kein Anlaufen.",preview:"Blitzartig einatmen, sofort auf sssssss ausatmen",dur:48,phases:[
  {type:'in',dur:1,label:'Ein'},{type:'out',dur:2,label:'sssssss'},
  {type:'in',dur:1,label:'Ein'},{type:'out',dur:4,label:'sssssss'},
  {type:'in',dur:1,label:'Ein'},{type:'out',dur:6,label:'sssssss'},
  {type:'in',dur:1,label:'Ein'},{type:'out',dur:8,label:'sssssss'}
 ]},
-{name:"2 \u00b7 Mikro-Dynamik",desc:"16 Counts sssssss in vier dynamischen Zonen \u2013 Luftgeschwindigkeit \u00e4ndert sich, K\u00f6rper bleibt stabil.",dur:72,phases:[
+{name:"2 \u00b7 Mikro-Dynamik",desc:"16 Counts sssssss in vier dynamischen Zonen \u2013 Luftgeschwindigkeit \u00e4ndert sich, K\u00f6rper bleibt stabil.",preview:"16 Counts sssssss \u2013 ppp \u2192 mf \u2192 ff \u2192 ppp",dur:72,phases:[
  {type:'in',dur:2,label:'Ein'},
  {type:'out',dur:16,label:'sssssss',subticks:[
    {dur:4,label:'ppp',level:0.1},{dur:4,label:'mf',level:0.5},
    {dur:4,label:'ff',level:0.95},{dur:4,label:'ppp',level:0.1}
  ]}
 ]},
-{name:"3 \u00b7 Air Suspension",desc:"Broken Air: in der Pause offen bleiben, dann nahtlos weiter \u2013 kein Reset.",dur:55,phases:[
+{name:"3 \u00b7 Air Suspension",desc:"Broken Air: in der Pause offen bleiben, dann nahtlos weiter \u2013 kein Reset.",preview:"Aus, halten (offen!), weiter \u2013 kein Reset",dur:55,phases:[
  {type:'in',dur:1,label:'Ein'},{type:'out',dur:4,label:'sssssss'},{type:'hold',dur:4,label:'Stopp \u2013 offen'},{type:'out',dur:8,label:'sssssss weiter'},
  {type:'in',dur:1,label:'Ein'},{type:'out',dur:4,label:'sssssss'},{type:'hold',dur:6,label:'Stopp \u2013 offen'},{type:'out',dur:8,label:'sssssss weiter'},
  {type:'in',dur:1,label:'Ein'},{type:'out',dur:4,label:'sssssss'},{type:'hold',dur:4,label:'Stopp \u2013 offen'},{type:'out',dur:10,label:'sssssss weiter'}
 ]},
-{name:"4 \u00b7 Artikulation vs. Luftfluss",desc:"Luft bleibt legato getragen, HA setzt nur Impulse obendrauf \u2013 kein Abrei\u00dfen.",dur:40,phases:[
+{name:"4 \u00b7 Artikulation vs. Luftfluss",desc:"Luft bleibt legato getragen, HA setzt nur Impulse obendrauf \u2013 kein Abrei\u00dfen.",preview:"Luft legato, HA-Impulse obendrauf",dur:40,phases:[
  {type:'in',dur:2,label:'Ein'},
  {type:'out',dur:8,label:'HA-ha-ha-HA-ha-ha-HA-ha',pulses:[
    {t:0.2,accent:true},{t:1.15,accent:false},{t:2.1,accent:false},{t:3.05,accent:true},
    {t:4.0,accent:false},{t:4.95,accent:false},{t:5.9,accent:true},{t:6.85,accent:false}
  ]}
 ]},
-{name:"5 \u00b7 High-Resistance Focus",desc:"Enge \u00d6ffnung, fokussierter Strahl: konstant, dann crescendo, dann decrescendo.",dur:68,phases:[
+{name:"5 \u00b7 High-Resistance Focus",desc:"Enge \u00d6ffnung, fokussierter Strahl: konstant, dann crescendo, dann decrescendo.",preview:"Enger Strahl \u2013 konstant, crescendo, decrescendo",dur:68,phases:[
  {type:'in',dur:1,label:'Ein'},
  {type:'out',dur:16,label:'sssssss / TSS',subticks:[
    {dur:8,label:'konstant',level:0.4},
@@ -139,13 +141,13 @@ const steps=[
    {dur:4,label:'decrescendo',level:0.95,rampTo:0.1,fromColor:[255,228,150],toColor:[55,68,86]}
  ]}
 ]},
-{name:"6 \u00b7 Extreme Efficiency",desc:"Minimale Luftmenge, maximale Kontrolle bis zum letzten Moment.",dur:63,phases:[
+{name:"6 \u00b7 Extreme Efficiency",desc:"Minimale Luftmenge, maximale Kontrolle bis zum letzten Moment.",preview:"Minimale Luft, maximale Kontrolle",dur:63,phases:[
  {type:'in',dur:1,label:'Ein'},{type:'out',dur:20,label:'minimal \u2013 maximale Kontrolle'}
 ]}
 ];
 
 let cur=0,phaseIdx=0,subticks=[],pulses=[],pulseCursor=0,running=false,timer=null,flashTimer=null;
-let stepStartAt=0,phaseStartAt=0;
+let stepStartAt=0,phaseStartAt=0,pausedAt=0,inFlash=false,started=false;
 function now(){return performance.now()/1000;}
 
 const els={
@@ -156,7 +158,8 @@ const els={
  barFill:document.getElementById('barFill'),stepName:document.getElementById('stepName'),
  stepDesc:document.getElementById('stepDesc'),playBtn:document.getElementById('playBtn'),
  grandTotal:document.getElementById('grandTotal'),moduleFlash:document.getElementById('moduleFlash'),
- mfNum:document.getElementById('mfNum'),mfName:document.getElementById('mfName')
+ mfNum:document.getElementById('mfNum'),mfName:document.getElementById('mfName'),
+ mfPreview:document.getElementById('mfPreview'),mfCountdown:document.getElementById('mfCountdown')
 };
 steps.forEach((s,i)=>{const d=document.createElement('div');d.className='seg'+(i===0?' active':'');els.seg.appendChild(d);});
 
@@ -196,28 +199,53 @@ function totalRemaining(stepLeft,phaseLeft){
   for(let i=cur+1;i<steps.length;i++) r+=steps[i].dur;
   return r;
 }
-function showModuleFlash(){
+function showModuleFlash(onDone){
   els.mfNum.textContent=String(cur+1).padStart(2,'0');
   els.mfName.textContent=steps[cur].name.replace(/^\d+\s*\u00b7\s*/,'');
+  els.mfPreview.textContent=steps[cur].preview||'';
   els.moduleFlash.classList.add('show');
+  let n=3;
+  els.mfCountdown.textContent=n;
   clearTimeout(flashTimer);
-  flashTimer=setTimeout(()=>{els.moduleFlash.classList.remove('show');},1300);
+  (function step(){
+    flashTimer=setTimeout(()=>{
+      n--;
+      if(n>0){
+        els.mfCountdown.textContent=n;
+        step();
+      } else {
+        els.moduleFlash.classList.remove('show');
+        if(onDone) onDone();
+      }
+    },1000);
+  })();
 }
 function loadStep(){
-  stepStartAt=now();phaseIdx=0;
+  phaseIdx=0;
+  started=false;
   els.stepName.textContent=steps[cur].name;
   els.stepDesc.textContent=steps[cur].desc;
   document.querySelectorAll('.seg').forEach((d,i)=>{d.classList.toggle('active',i===cur);d.classList.toggle('done',i<cur);});
   els.barFill.style.width='0%';
   els.grandTotal.textContent=fmt(totalRemaining(steps[cur].dur,steps[cur].dur));
-  showModuleFlash();
-  loadPhase();
+  inFlash=true;
+  loadPhase(); // sets the rest visual (hidden behind the flash overlay)
+  showModuleFlash(()=>{
+    inFlash=false;
+    phaseIdx=0;
+    stepStartAt=now();
+    loadPhase(); // re-anchor clean timestamps now that the flash is gone
+    started=true;
+    pausedAt=0;
+    play(); // auto-start: no extra button press needed once the countdown ends
+  });
 }
 function firePulse(accent){
   els.circle.style.boxShadow= accent ? '0 0 36px 8px rgba(237,173,46,0.75)' : '0 0 20px 4px rgba(237,173,46,0.4)';
   setTimeout(()=>{els.circle.style.boxShadow='0 0 0 0 rgba(237,173,46,0)';},accent?260:170);
 }
 function tick(){
+  if(inFlash) return;
   const t=now();
   const phase=steps[cur].phases[phaseIdx];
   const phaseElapsed=t-phaseStartAt;
@@ -262,12 +290,38 @@ function tick(){
     }
   }
 }
-function play(){running=true;els.playBtn.innerHTML='&#9208; Pause';timer=setInterval(tick,100);}
-function pause(){running=false;els.playBtn.innerHTML='&#9654; Start';clearInterval(timer);}
-els.playBtn.addEventListener('click',()=>running?pause():play());
+function play(){
+  running=true;
+  if(pausedAt){
+    const gap=now()-pausedAt;
+    phaseStartAt+=gap; stepStartAt+=gap;
+    pausedAt=0;
+  }
+  els.playBtn.innerHTML='&#9208; Pause';
+  if(!timer){ timer=setInterval(tick,100); }
+}
+function pause(){
+  running=false;
+  pausedAt=now();
+  els.playBtn.innerHTML='&#9654; Start';
+  clearInterval(timer);
+  timer=null;
+}
+els.playBtn.addEventListener('click',()=>{
+  if(running){ pause(); }
+  else if(started){ play(); }
+  else { loadStep(); }
+});
 document.getElementById('skipBtn').addEventListener('click',()=>{pause();cur=cur<steps.length-1?cur+1:0;loadStep();});
 document.getElementById('resetBtn').addEventListener('click',()=>{pause();cur=0;loadStep();});
-loadStep();
+
+// initial render: show module 1 statically, no countdown until Start is pressed
+els.stepName.textContent=steps[cur].name;
+els.stepDesc.textContent=steps[cur].desc;
+document.querySelectorAll('.seg').forEach((d,i)=>{d.classList.toggle('active',i===cur);d.classList.toggle('done',i<cur);});
+els.grandTotal.textContent=fmt(totalRemaining(steps[cur].dur,steps[cur].dur));
+inFlash=true;
+loadPhase();
 </script>
 </body>
 </html>
