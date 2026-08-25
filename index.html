@@ -35,13 +35,13 @@
   }
   .prepOverlay.show{opacity:1; pointer-events:auto}
   .prepIcon{font-size:38px; margin-bottom:8px}
-  .prepText{font-size:17px; font-weight:700; color:var(--ink); margin:0 0 10px}
+  .prepText{font-size:17px; font-weight:700; color:var(--ink); margin:0 0 10px; max-width:300px; line-height:1.4}
   .prepCount{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:54px; font-weight:700; color:var(--accent); margin:0; transition:color .3s}
   .circle-wrap{width:190px; height:190px; margin:4px auto 2px; display:flex; align-items:center; justify-content:center}
   .circle{
     width:150px; height:150px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
-    transition:transform 1.1s linear, box-shadow 1.1s linear, background 0.4s;
+    transition:background 0.4s;
     transform:scale(0.4); touch-action:manipulation;
   }
   .circle .phase{font-size:36px; line-height:1}
@@ -107,7 +107,7 @@ const steps=[
 {name:"Ruhiger Luftstrom",instr:"Arme seitlich hoch beim Einatmen, runter beim Ausatmen. Die Luft fließt die ganze Zeit gleichmäßig, nie gepresst.",dur:84,emoji:"↕️",color:"#639922",tint:"#eaf3de",mode:"pacer",inhale:7,exhale:7},
 {name:"Papierflieger pusten",instr:"Kurz und locker einatmen. Dann die Luft ganz sanft rausströmen lassen – Lippen bleiben locker geöffnet, nicht geschlossen.",dur:66,emoji:"✈️",color:"#ef9f27",tint:"#faeeda",mode:"pacer",inhale:4,exhale:7},
 {name:"Ruhig ankommen",instr:"Normal weiteratmen, durch die Nase ein, durch den Mund aus. Einfach dem Atem folgen, ohne zu zählen.",dur:45,emoji:"🌙",color:"#7f77dd",tint:"#eeedfe",mode:"idle"},
-{name:"Bereit für die Trompete",instr:"Mundstück oder Trompete nehmen. Entspannt einatmen und die Luft sanft rausströmen lassen – Lippen bleiben locker, nicht geschlossen.",dur:30,emoji:"🎺",color:"#d4537e",tint:"#fbeaf0",mode:"idle",preRoll:{text:"Gleich geht's los!",icon:"⏳",dur:10}}
+{name:"Bereit für die Trompete",instr:"Mundstück oder Trompete nehmen. Entspannt einatmen und die Luft sanft rausströmen lassen – Lippen bleiben locker, nicht geschlossen.",dur:30,emoji:"🎺",color:"#d4537e",tint:"#fbeaf0",mode:"idle",preRoll:{text:"Mundstück oder Trompete bereit machen, gleich geht es weiter",icon:"⏳",dur:10}}
 ];
 let cur=0,running=false,mainTimer=null,phase="in",phaseStartAt=0,stepStartAt=0,pausedAt=0,inOverlay=false,overlayTimer=null;
 function now(){return performance.now()/1000;}
@@ -120,17 +120,19 @@ phaseWord=document.getElementById("phaseWord"),prepOverlay=document.getElementBy
 prepIcon=document.getElementById("prepIcon"),prepText=document.getElementById("prepText"),prepCount=document.getElementById("prepCount");
 
 function hexToRgba(hex,a){hex=hex.replace("#","");const r=parseInt(hex.substring(0,2),16),g=parseInt(hex.substring(2,4),16),b=parseInt(hex.substring(4,6),16);return "rgba("+r+","+g+","+b+","+a+")";}
-function setPhaseVisual(color,big){
-  circle.style.transform=big?"scale(1.32)":"scale(0.4)";
-  circle.style.boxShadow=big?("0 0 60px 16px "+hexToRgba(color,0.55)):("0 0 14px 2px "+hexToRgba(color,0.2));
-}
+function shadowFor(color,big){return big?("0 0 60px 16px "+hexToRgba(color,0.55)):("0 0 14px 2px "+hexToRgba(color,0.2));}
+let currentAnim=null;
 function goPhase(big,color,dur){
-  // force a clean committed frame at the current extreme before reversing
-  // direction, so the browser can never coalesce/skip the reversal animation
-  circle.style.transitionDuration="0s";
-  void circle.offsetWidth;
-  circle.style.transitionDuration=dur+"s";
-  setPhaseVisual(color,big);
+  // Web Animations API: always explicitly plays both the "from" and "to"
+  // keyframe, so it can never be silently skipped/coalesced by the browser
+  // the way a CSS transition sometimes is when duration+target change together.
+  if(currentAnim){currentAnim.cancel();}
+  const fromScale=big?0.4:1.32, toScale=big?1.32:0.4;
+  currentAnim=circle.animate(
+    [{transform:"scale("+fromScale+")",boxShadow:shadowFor(color,!big)},
+     {transform:"scale("+toScale+")",boxShadow:shadowFor(color,big)}],
+    {duration:dur*1000,easing:"linear",fill:"forwards"}
+  );
 }
 
 steps.forEach((s,i)=>{const d=document.createElement("div");d.className="dot"+(i===0?" active":"");dotsEl.appendChild(d);});
@@ -170,6 +172,7 @@ function goToStep(i){
 function loadStep(i){
   cur=i;const s=steps[i];
   stepStartAt=now();
+  if(currentAnim){currentAnim.cancel();currentAnim=null;}
   stepName.textContent=s.name;stepInstr.textContent=s.instr;
   stepCounter.textContent="Schritt "+(i+1)+" von "+steps.length;
   circle.innerHTML='<span class="phase" id="phaseLabel"></span>';
@@ -185,17 +188,11 @@ function loadStep(i){
   phaseWord.style.color=s.color;
   if(s.mode==="pacer"){
     phase="in";
-    // always commit a clean "small" starting frame first, so the very first
-    // inhale of a module is never seen as already-expanded / skipped
-    circle.style.transitionDuration="0s";
     circle.style.transform="scale(0.4)";
-    circle.style.boxShadow="0 0 14px 2px "+hexToRgba(s.color,0.2);
-    void circle.offsetWidth;
     phaseStartAt=now();
     goPhase(true,s.color,s.inhale);
     phaseWord.textContent="Einatmen";
   } else {
-    circle.style.transitionDuration="1s";
     circle.style.boxShadow="0 0 10px 1px "+hexToRgba(s.color,0.12);
     circle.style.transform="scale(0.85)";
     card.classList.add("idle");
