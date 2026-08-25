@@ -75,7 +75,7 @@
       <p class="instr" id="stepInstr"></p>
     </div>
     <div class="bar-track"><div class="bar-fill" id="stepFill"></div></div>
-    <div class="times"><span id="stepTimeLeft">0:45</span><span id="totalTime">Gesamt 5:00</span></div>
+    <div class="times"><span id="stepTimeLeft">0:45</span><span id="totalTime">Gesamt 5:03</span></div>
     <div class="controls">
       <button id="playBtn">▶ Start</button>
       <button class="secondary" id="skipBtn">⏭ Weiter</button>
@@ -90,13 +90,14 @@
 <script>
 const steps=[
 {name:"Aufwecken",instr:"Finger hinter dem Rücken verschränken. Beim Einatmen Schultern sanft anspannen, beim Ausatmen lösen. Dann leicht nach vorne beugen und weiteratmen.",dur:45,emoji:"🙆",color:"#378add",tint:"#e6f1fb",mode:"idle"},
-{name:"Spannung loslassen",instr:"Tief einatmen, dann beim Ausatmen laut und locker seufzen. Mehrmals wiederholen.",dur:30,emoji:"💨",color:"#1d9e75",tint:"#e1f5ee",mode:"pacer",inhale:4,exhale:5},
-{name:"Ruhiger Luftstrom",instr:"Arme seitlich hoch beim Einatmen, runter beim Ausatmen. Die Luft fließt die ganze Zeit gleichmäßig, nie gepresst.",dur:90,emoji:"↕️",color:"#639922",tint:"#eaf3de",mode:"pacer",inhale:6,exhale:6},
-{name:"Papierflieger pusten",instr:"Kurz und locker einatmen. Dann die Luft ganz sanft rausströmen lassen – Lippen bleiben locker geöffnet, nicht geschlossen.",dur:60,emoji:"✈️",color:"#ef9f27",tint:"#faeeda",mode:"pacer",inhale:3,exhale:6},
+{name:"Spannung loslassen",instr:"Tief einatmen, dann beim Ausatmen laut und locker seufzen. Mehrmals wiederholen.",dur:33,emoji:"💨",color:"#1d9e75",tint:"#e1f5ee",mode:"pacer",inhale:5,exhale:6},
+{name:"Ruhiger Luftstrom",instr:"Arme seitlich hoch beim Einatmen, runter beim Ausatmen. Die Luft fließt die ganze Zeit gleichmäßig, nie gepresst.",dur:84,emoji:"↕️",color:"#639922",tint:"#eaf3de",mode:"pacer",inhale:7,exhale:7},
+{name:"Papierflieger pusten",instr:"Kurz und locker einatmen. Dann die Luft ganz sanft rausströmen lassen – Lippen bleiben locker geöffnet, nicht geschlossen.",dur:66,emoji:"✈️",color:"#ef9f27",tint:"#faeeda",mode:"pacer",inhale:4,exhale:7},
 {name:"Ruhig ankommen",instr:"Normal weiteratmen, durch die Nase ein, durch den Mund aus. Einfach dem Atem folgen, ohne zu zählen.",dur:45,emoji:"🌙",color:"#7f77dd",tint:"#eeedfe",mode:"idle"},
 {name:"Bereit für die Trompete",instr:"Mundstück oder Trompete nehmen. Entspannt einatmen und die Luft sanft rausströmen lassen – Lippen bleiben locker, nicht geschlossen.",dur:30,emoji:"🎺",color:"#d4537e",tint:"#fbeaf0",mode:"idle"}
 ];
-let cur=0,timeLeft=steps[0].dur,running=false,mainTimer=null,phase="in",phaseLeft=0;
+let cur=0,running=false,mainTimer=null,phase="in",phaseStartAt=0,stepStartAt=0,pausedAt=0;
+function now(){return performance.now()/1000;}
 const circle=document.getElementById("circle"),phaseLabel=document.getElementById("phaseLabel"),
 stepName=document.getElementById("stepName"),stepInstr=document.getElementById("stepInstr"),
 stepFill=document.getElementById("stepFill"),stepTimeLeft=document.getElementById("stepTimeLeft"),
@@ -113,17 +114,18 @@ function setPhaseVisual(color,big){
 steps.forEach((s,i)=>{const d=document.createElement("div");d.className="dot"+(i===0?" active":"");dotsEl.appendChild(d);});
 
 function fmt(t){t=Math.max(0,Math.round(t));const m=Math.floor(t/60),s=t%60;return m+":"+String(s).padStart(2,"0");}
-function totalRemaining(){let r=timeLeft;for(let i=cur+1;i<steps.length;i++)r+=steps[i].dur;return r;}
+function totalRemaining(curStepLeft){let r=curStepLeft;for(let i=cur+1;i<steps.length;i++)r+=steps[i].dur;return r;}
 
 function loadStep(i){
-  cur=i;const s=steps[i];timeLeft=s.dur;
+  cur=i;const s=steps[i];
+  stepStartAt=now();
   stepName.textContent=s.name;stepInstr.textContent=s.instr;
   stepCounter.textContent="Schritt "+(i+1)+" von "+steps.length;
   circle.innerHTML='<span class="phase" id="phaseLabel"></span>';
   card.style.background="linear-gradient(180deg, "+s.tint+" 0%, #ffffff 70%)";
   document.documentElement.style.setProperty("--accent", s.color);
   stepFill.style.background=s.color;
-  stepTimeLeft.textContent=fmt(timeLeft);totalTime.textContent="Gesamt "+fmt(totalRemaining());
+  stepTimeLeft.textContent=fmt(s.dur);totalTime.textContent="Gesamt "+fmt(totalRemaining(s.dur));
   stepFill.style.width="0%";
   document.querySelectorAll(".dot").forEach((d,idx)=>{d.classList.toggle("active",idx===i);d.classList.toggle("done",idx<i);});
   card.classList.remove("idle");
@@ -131,7 +133,7 @@ function loadStep(i){
   circle.querySelector(".phase").textContent=s.emoji;
   phaseWord.style.color=s.color;
   if(s.mode==="pacer"){
-    phase="in";phaseLeft=s.inhale;
+    phase="in";phaseStartAt=now();
     circle.style.transitionDuration=s.inhale+"s";
     setPhaseVisual(s.color,true);
     phaseWord.textContent="Einatmen";
@@ -144,25 +146,55 @@ function loadStep(i){
   }
 }
 
+function advanceStep(){
+  if(cur<steps.length-1){loadStep(cur+1);}
+  else{pause();stepInstr.textContent="Fertig! Gut gemacht. 🎉";playBtn.textContent="▶ Start";}
+}
+
 function tick(){
-  timeLeft-=0.1;
-  stepFill.style.width=Math.min(100,(1-timeLeft/steps[cur].dur)*100)+"%";
-  stepTimeLeft.textContent=fmt(timeLeft);totalTime.textContent="Gesamt "+fmt(totalRemaining());
-  if(steps[cur].mode==="pacer"){
-    phaseLeft-=0.1;
+  const t=now();
+  const s=steps[cur];
+  const stepElapsed=t-stepStartAt;
+  const stepLeft=s.dur-stepElapsed;
+  stepFill.style.width=Math.min(100,(stepElapsed/s.dur)*100)+"%";
+
+  if(s.mode==="pacer"){
+    const phaseDur=phase==="in"?s.inhale:s.exhale;
+    const phaseElapsed=t-phaseStartAt;
+    const phaseLeft=phaseDur-phaseElapsed;
+    const shown=stepLeft>0?stepLeft:phaseLeft;
+    stepTimeLeft.textContent=fmt(shown);totalTime.textContent="Gesamt "+fmt(totalRemaining(shown));
     if(phaseLeft<=0){
-      const col=steps[cur].color;
-      if(phase==="in"){phase="out";phaseLeft=steps[cur].exhale;circle.style.transitionDuration=steps[cur].exhale+"s";setPhaseVisual(col,false);phaseWord.textContent="Ausatmen";}
-      else{phase="in";phaseLeft=steps[cur].inhale;circle.style.transitionDuration=steps[cur].inhale+"s";setPhaseVisual(col,true);phaseWord.textContent="Einatmen";}
+      // never cut a breath in half: only move to the next step once the
+      // current inhale/exhale has fully finished, even if that runs a little long
+      if(stepLeft<=0){advanceStep();return;}
+      const col=s.color;
+      if(phase==="in"){phase="out";phaseStartAt=now();circle.style.transitionDuration=s.exhale+"s";setPhaseVisual(col,false);phaseWord.textContent="Ausatmen";}
+      else{phase="in";phaseStartAt=now();circle.style.transitionDuration=s.inhale+"s";setPhaseVisual(col,true);phaseWord.textContent="Einatmen";}
     }
-  }
-  if(timeLeft<=0){
-    if(cur<steps.length-1){loadStep(cur+1);}
-    else{pause();stepInstr.textContent="Fertig! Gut gemacht. 🎉";playBtn.textContent="▶ Start";}
+  } else {
+    const shown=stepLeft>0?stepLeft:0;
+    stepTimeLeft.textContent=fmt(shown);totalTime.textContent="Gesamt "+fmt(totalRemaining(shown));
+    if(stepLeft<=0){advanceStep();}
   }
 }
-function play(){running=true;playBtn.textContent="⏸ Pause";mainTimer=setInterval(tick,100);}
-function pause(){running=false;playBtn.textContent="▶ Start";clearInterval(mainTimer);}
+function play(){
+  running=true;
+  if(pausedAt){
+    const gap=now()-pausedAt;
+    phaseStartAt+=gap;stepStartAt+=gap;
+    pausedAt=0;
+  }
+  playBtn.textContent="⏸ Pause";
+  if(!mainTimer){mainTimer=setInterval(tick,100);}
+}
+function pause(){
+  running=false;
+  pausedAt=now();
+  playBtn.textContent="▶ Start";
+  clearInterval(mainTimer);
+  mainTimer=null;
+}
 playBtn.addEventListener("click",()=>{running?pause():play();});
 document.getElementById("skipBtn").addEventListener("click",()=>{pause();if(cur<steps.length-1)loadStep(cur+1);else loadStep(0);});
 document.getElementById("resetBtn").addEventListener("click",()=>{pause();loadStep(0);});
