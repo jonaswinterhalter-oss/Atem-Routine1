@@ -33,7 +33,7 @@
   .circle{
     width:150px; height:150px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
-    transition:transform 1.1s cubic-bezier(.4,0,.2,1), box-shadow 1.1s cubic-bezier(.4,0,.2,1), background 0.4s;
+    transition:transform 1.1s linear, box-shadow 1.1s linear, background 0.4s;
     transform:scale(0.4); touch-action:manipulation;
   }
   .circle .phase{font-size:36px; line-height:1}
@@ -75,7 +75,7 @@
       <p class="instr" id="stepInstr"></p>
     </div>
     <div class="bar-track"><div class="bar-fill" id="stepFill"></div></div>
-    <div class="times"><span id="stepTimeLeft">0:45</span><span id="totalTime">Gesamt 5:03</span></div>
+    <div class="times"><span id="stepTimeLeft">0:45</span><span id="totalTime">Gesamt 5:13</span></div>
     <div class="controls">
       <button id="playBtn">▶ Start</button>
       <button class="secondary" id="skipBtn">⏭ Weiter</button>
@@ -94,6 +94,7 @@ const steps=[
 {name:"Ruhiger Luftstrom",instr:"Arme seitlich hoch beim Einatmen, runter beim Ausatmen. Die Luft fließt die ganze Zeit gleichmäßig, nie gepresst.",dur:84,emoji:"↕️",color:"#639922",tint:"#eaf3de",mode:"pacer",inhale:7,exhale:7},
 {name:"Papierflieger pusten",instr:"Kurz und locker einatmen. Dann die Luft ganz sanft rausströmen lassen – Lippen bleiben locker geöffnet, nicht geschlossen.",dur:66,emoji:"✈️",color:"#ef9f27",tint:"#faeeda",mode:"pacer",inhale:4,exhale:7},
 {name:"Ruhig ankommen",instr:"Normal weiteratmen, durch die Nase ein, durch den Mund aus. Einfach dem Atem folgen, ohne zu zählen.",dur:45,emoji:"🌙",color:"#7f77dd",tint:"#eeedfe",mode:"idle"},
+{name:"Mundstück oder Trompete bereit machen",instr:"Gleich geht's los – Instrument in Position bringen.",dur:10,emoji:"⏳",color:"#e0a83e",tint:"#fdf3e0",mode:"idle"},
 {name:"Bereit für die Trompete",instr:"Mundstück oder Trompete nehmen. Entspannt einatmen und die Luft sanft rausströmen lassen – Lippen bleiben locker, nicht geschlossen.",dur:30,emoji:"🎺",color:"#d4537e",tint:"#fbeaf0",mode:"idle"}
 ];
 let cur=0,running=false,mainTimer=null,phase="in",phaseStartAt=0,stepStartAt=0,pausedAt=0;
@@ -133,7 +134,14 @@ function loadStep(i){
   circle.querySelector(".phase").textContent=s.emoji;
   phaseWord.style.color=s.color;
   if(s.mode==="pacer"){
-    phase="in";phaseStartAt=now();
+    phase="in";
+    // always commit a clean "small" starting frame first, so the very first
+    // inhale of a module is never seen as already-expanded / skipped
+    circle.style.transitionDuration="0s";
+    circle.style.transform="scale(0.4)";
+    circle.style.boxShadow="0 0 14px 2px "+hexToRgba(s.color,0.2);
+    void circle.offsetWidth;
+    phaseStartAt=now();
     circle.style.transitionDuration=s.inhale+"s";
     setPhaseVisual(s.color,true);
     phaseWord.textContent="Einatmen";
