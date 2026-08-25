@@ -28,7 +28,15 @@
   .dot{width:8px; height:8px; border-radius:50%; background:#e2ded2; transition:all .3s}
   .dot.active{width:22px; border-radius:5px}
   .dot.done{background:#c9c4b3}
-  .stage{text-align:center; padding-top:6px}
+  .stage{text-align:center; padding-top:6px; position:relative}
+  .prepOverlay{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:var(--card); opacity:0; pointer-events:none; transition:opacity .5s ease;
+  }
+  .prepOverlay.show{opacity:1; pointer-events:auto}
+  .prepIcon{font-size:38px; margin-bottom:8px}
+  .prepText{font-size:17px; font-weight:700; color:var(--ink); margin:0 0 10px}
+  .prepCount{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:54px; font-weight:700; color:var(--accent); margin:0; transition:color .3s}
   .circle-wrap{width:190px; height:190px; margin:4px auto 2px; display:flex; align-items:center; justify-content:center}
   .circle{
     width:150px; height:150px; border-radius:50%;
@@ -73,6 +81,11 @@
       <p class="counter" id="stepCounter">Schritt 1 von 6</p>
       <p class="name" id="stepName">Aufwecken</p>
       <p class="instr" id="stepInstr"></p>
+      <div class="prepOverlay" id="prepOverlay">
+        <div class="prepIcon" id="prepIcon">⏳</div>
+        <p class="prepText" id="prepText">Gleich geht's los!</p>
+        <p class="prepCount" id="prepCount">10</p>
+      </div>
     </div>
     <div class="bar-track"><div class="bar-fill" id="stepFill"></div></div>
     <div class="times"><span id="stepTimeLeft">0:45</span><span id="totalTime">Gesamt 5:13</span></div>
@@ -94,28 +107,65 @@ const steps=[
 {name:"Ruhiger Luftstrom",instr:"Arme seitlich hoch beim Einatmen, runter beim Ausatmen. Die Luft fließt die ganze Zeit gleichmäßig, nie gepresst.",dur:84,emoji:"↕️",color:"#639922",tint:"#eaf3de",mode:"pacer",inhale:7,exhale:7},
 {name:"Papierflieger pusten",instr:"Kurz und locker einatmen. Dann die Luft ganz sanft rausströmen lassen – Lippen bleiben locker geöffnet, nicht geschlossen.",dur:66,emoji:"✈️",color:"#ef9f27",tint:"#faeeda",mode:"pacer",inhale:4,exhale:7},
 {name:"Ruhig ankommen",instr:"Normal weiteratmen, durch die Nase ein, durch den Mund aus. Einfach dem Atem folgen, ohne zu zählen.",dur:45,emoji:"🌙",color:"#7f77dd",tint:"#eeedfe",mode:"idle"},
-{name:"Mundstück oder Trompete bereit machen",instr:"Gleich geht's los – Instrument in Position bringen.",dur:10,emoji:"⏳",color:"#e0a83e",tint:"#fdf3e0",mode:"idle"},
-{name:"Bereit für die Trompete",instr:"Mundstück oder Trompete nehmen. Entspannt einatmen und die Luft sanft rausströmen lassen – Lippen bleiben locker, nicht geschlossen.",dur:30,emoji:"🎺",color:"#d4537e",tint:"#fbeaf0",mode:"idle"}
+{name:"Bereit für die Trompete",instr:"Mundstück oder Trompete nehmen. Entspannt einatmen und die Luft sanft rausströmen lassen – Lippen bleiben locker, nicht geschlossen.",dur:30,emoji:"🎺",color:"#d4537e",tint:"#fbeaf0",mode:"idle",preRoll:{text:"Gleich geht's los!",icon:"⏳",dur:10}}
 ];
-let cur=0,running=false,mainTimer=null,phase="in",phaseStartAt=0,stepStartAt=0,pausedAt=0;
+let cur=0,running=false,mainTimer=null,phase="in",phaseStartAt=0,stepStartAt=0,pausedAt=0,inOverlay=false,overlayTimer=null;
 function now(){return performance.now()/1000;}
 const circle=document.getElementById("circle"),phaseLabel=document.getElementById("phaseLabel"),
 stepName=document.getElementById("stepName"),stepInstr=document.getElementById("stepInstr"),
 stepFill=document.getElementById("stepFill"),stepTimeLeft=document.getElementById("stepTimeLeft"),
 totalTime=document.getElementById("totalTime"),playBtn=document.getElementById("playBtn"),
 dotsEl=document.getElementById("dots"),stepCounter=document.getElementById("stepCounter"),card=document.getElementById("card"),
-phaseWord=document.getElementById("phaseWord");
+phaseWord=document.getElementById("phaseWord"),prepOverlay=document.getElementById("prepOverlay"),
+prepIcon=document.getElementById("prepIcon"),prepText=document.getElementById("prepText"),prepCount=document.getElementById("prepCount");
 
 function hexToRgba(hex,a){hex=hex.replace("#","");const r=parseInt(hex.substring(0,2),16),g=parseInt(hex.substring(2,4),16),b=parseInt(hex.substring(4,6),16);return "rgba("+r+","+g+","+b+","+a+")";}
 function setPhaseVisual(color,big){
   circle.style.transform=big?"scale(1.32)":"scale(0.4)";
   circle.style.boxShadow=big?("0 0 60px 16px "+hexToRgba(color,0.55)):("0 0 14px 2px "+hexToRgba(color,0.2));
 }
+function goPhase(big,color,dur){
+  // force a clean committed frame at the current extreme before reversing
+  // direction, so the browser can never coalesce/skip the reversal animation
+  circle.style.transitionDuration="0s";
+  void circle.offsetWidth;
+  circle.style.transitionDuration=dur+"s";
+  setPhaseVisual(color,big);
+}
 
 steps.forEach((s,i)=>{const d=document.createElement("div");d.className="dot"+(i===0?" active":"");dotsEl.appendChild(d);});
 
 function fmt(t){t=Math.max(0,Math.round(t));const m=Math.floor(t/60),s=t%60;return m+":"+String(s).padStart(2,"0");}
-function totalRemaining(curStepLeft){let r=curStepLeft;for(let i=cur+1;i<steps.length;i++)r+=steps[i].dur;return r;}
+function totalRemaining(curStepLeft){
+  let r=curStepLeft;
+  for(let i=cur+1;i<steps.length;i++){ if(steps[i].preRoll) r+=steps[i].preRoll.dur; r+=steps[i].dur; }
+  return r;
+}
+function showPrepOverlay(preRoll,onDone){
+  inOverlay=true;
+  prepIcon.textContent=preRoll.icon||"⏳";
+  prepText.textContent=preRoll.text;
+  let n=preRoll.dur;
+  prepCount.textContent=n;
+  prepOverlay.classList.add("show");
+  clearTimeout(overlayTimer);
+  (function step(){
+    overlayTimer=setTimeout(()=>{
+      n--;
+      if(n>0){ prepCount.textContent=n; step(); }
+      else{ prepOverlay.classList.remove("show"); inOverlay=false; if(onDone) onDone(); }
+    },1000);
+  })();
+}
+function goToStep(i){
+  const target=steps[i];
+  if(target.preRoll){
+    document.documentElement.style.setProperty("--accent", target.color);
+    showPrepOverlay(target.preRoll, ()=>loadStep(i));
+  } else {
+    loadStep(i);
+  }
+}
 
 function loadStep(i){
   cur=i;const s=steps[i];
@@ -142,8 +192,7 @@ function loadStep(i){
     circle.style.boxShadow="0 0 14px 2px "+hexToRgba(s.color,0.2);
     void circle.offsetWidth;
     phaseStartAt=now();
-    circle.style.transitionDuration=s.inhale+"s";
-    setPhaseVisual(s.color,true);
+    goPhase(true,s.color,s.inhale);
     phaseWord.textContent="Einatmen";
   } else {
     circle.style.transitionDuration="1s";
@@ -155,11 +204,12 @@ function loadStep(i){
 }
 
 function advanceStep(){
-  if(cur<steps.length-1){loadStep(cur+1);}
+  if(cur<steps.length-1){goToStep(cur+1);}
   else{pause();stepInstr.textContent="Fertig! Gut gemacht. 🎉";playBtn.textContent="▶ Start";}
 }
 
 function tick(){
+  if(inOverlay) return;
   const t=now();
   const s=steps[cur];
   const stepElapsed=t-stepStartAt;
@@ -177,8 +227,8 @@ function tick(){
       // current inhale/exhale has fully finished, even if that runs a little long
       if(stepLeft<=0){advanceStep();return;}
       const col=s.color;
-      if(phase==="in"){phase="out";phaseStartAt=now();circle.style.transitionDuration=s.exhale+"s";setPhaseVisual(col,false);phaseWord.textContent="Ausatmen";}
-      else{phase="in";phaseStartAt=now();circle.style.transitionDuration=s.inhale+"s";setPhaseVisual(col,true);phaseWord.textContent="Einatmen";}
+      if(phase==="in"){phase="out";phaseStartAt=now();goPhase(false,col,s.exhale);phaseWord.textContent="Ausatmen";}
+      else{phase="in";phaseStartAt=now();goPhase(true,col,s.inhale);phaseWord.textContent="Einatmen";}
     }
   } else {
     const shown=stepLeft>0?stepLeft:0;
@@ -204,7 +254,7 @@ function pause(){
   mainTimer=null;
 }
 playBtn.addEventListener("click",()=>{running?pause():play();});
-document.getElementById("skipBtn").addEventListener("click",()=>{pause();if(cur<steps.length-1)loadStep(cur+1);else loadStep(0);});
+document.getElementById("skipBtn").addEventListener("click",()=>{pause();if(cur<steps.length-1)goToStep(cur+1);else goToStep(0);});
 document.getElementById("resetBtn").addEventListener("click",()=>{pause();loadStep(0);});
 loadStep(0);
 </script>
