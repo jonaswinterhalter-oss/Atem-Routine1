@@ -64,9 +64,49 @@
   button.secondary{background:#efece2; color:var(--ink)}
   .tip{text-align:center; font-size:12px; color:var(--muted); margin-top:18px}
   .credit{text-align:center; font-size:11px; color:#a6a49a; margin-top:10px}
+  .celebrateOverlay{
+    position:fixed; top:0; left:0; right:0; bottom:0; z-index:200; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:24px;
+    opacity:0; pointer-events:none; transition:opacity .4s ease;
+  }
+  .celebrateOverlay.show{opacity:1; pointer-events:auto}
+  .bg-glow{position:fixed; top:0; left:0; right:0; bottom:0; z-index:0; animation:bg-glow-color 2.6s linear infinite}
+  @keyframes bg-glow-color{
+    0%{background:#D8ECFF} 20%{background:#D6F3E6} 40%{background:#FDECC9}
+    60%{background:#EDEAFE} 80%{background:#FCE0EB} 100%{background:#D8ECFF}
+  }
+  .emoji-wrap{position:relative; z-index:1; width:150px; height:150px; margin:0 auto}
+  .emoji-face{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:88px; animation:face-bounce 1.6s ease-in-out infinite}
+  @keyframes face-bounce{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.06)}}
+  .emoji-hand{position:absolute; left:66%; top:8%; font-size:44px; transform-origin:75% 75%; animation:hand-wave .6s ease-in-out infinite}
+  @keyframes hand-wave{0%,100%{transform:rotate(0deg)}50%{transform:rotate(24deg)}}
+  .fw-origin{position:absolute; left:50%; top:50%; width:0; height:0; z-index:2}
+  .fw-flash{position:absolute; left:0; top:0; width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; opacity:0; background:radial-gradient(circle, rgba(55,138,221,0.9) 0%, rgba(55,138,221,0) 70%)}
+  .fw-flash.go{animation:fw-flash .55s ease-out}
+  @keyframes fw-flash{0%{opacity:1; transform:scale(.3)}100%{opacity:0; transform:scale(9)}}
+  .fw-particle{position:absolute; left:0; top:0; border-radius:50%; opacity:0; animation:fw-burst var(--fwdur,900ms) ease-out forwards; animation-delay:var(--fwdelay,0ms)}
+  @keyframes fw-burst{
+    0%{transform:translate(-50%,-50%) scale(.5); opacity:1}
+    65%{opacity:1}
+    100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(.1); opacity:0}
+  }
+  .cc-heading{position:relative; z-index:1; font-size:24px; font-weight:800; color:var(--ink); text-align:center; margin:16px 0 6px; max-width:320px}
+  .cc-body{position:relative; z-index:1; font-size:18px; font-weight:700; color:var(--accent); text-align:center; margin:0 0 24px}
+  .cc-close{position:relative; z-index:1}
 </style>
 </head>
 <body>
+<div class="celebrateOverlay" id="celebrateOverlay">
+  <div class="bg-glow"></div>
+  <div class="emoji-wrap" id="emojiWrap">
+    <span class="emoji-face">😄</span>
+    <span class="emoji-hand">👋</span>
+    <div class="fw-origin" id="fwOrigin"><div class="fw-flash" id="fwFlash"></div></div>
+  </div>
+  <p class="cc-heading">Toll, dass du heute geübt hast!</p>
+  <p class="cc-body">Bis morgen!</p>
+  <button class="cc-close" id="celebrateCloseBtn">Schliessen</button>
+</div>
 <div class="wrap">
   <header>
     <h1>Der Papierflieger-Atem</h1>
@@ -202,8 +242,49 @@ function loadStep(i){
 
 function advanceStep(){
   if(cur<steps.length-1){goToStep(cur+1);}
-  else{pause();stepInstr.textContent="Fertig! Gut gemacht. 🎉";playBtn.textContent="▶ Start";}
+  else{pause();playBtn.textContent="▶ Start";showCelebration();}
 }
+
+const celebrateOverlay=document.getElementById("celebrateOverlay"),
+fwOrigin=document.getElementById("fwOrigin"),fwFlash=document.getElementById("fwFlash");
+const fwColors=["#378add","#1d9e75","#ef9f27","#7f77dd","#d4537e"];
+function spawnParticles(container,count){
+  for(let i=0;i<count;i++){
+    const p=document.createElement("div");
+    p.className="fw-particle";
+    const angle=(Math.random()*360)*Math.PI/180;
+    const dist=45+Math.random()*90;
+    const tx=Math.sin(angle)*dist;
+    const ty=-Math.cos(angle)*dist;
+    const size=4+Math.random()*4;
+    p.style.setProperty("--tx",tx.toFixed(1)+"px");
+    p.style.setProperty("--ty",ty.toFixed(1)+"px");
+    p.style.setProperty("--fwdur",(650+Math.random()*550)+"ms");
+    p.style.setProperty("--fwdelay",(Math.random()*220)+"ms");
+    p.style.width=size+"px";
+    p.style.height=size+"px";
+    const col=fwColors[Math.floor(Math.random()*fwColors.length)];
+    p.style.background=col;
+    p.style.boxShadow="0 0 6px 1px "+col+"99";
+    container.appendChild(p);
+  }
+}
+function boom(){
+  spawnParticles(fwOrigin,24);
+  fwFlash.classList.remove("go");
+  void fwFlash.offsetWidth;
+  fwFlash.classList.add("go");
+}
+function showCelebration(){
+  celebrateOverlay.classList.add("show");
+  fwOrigin.querySelectorAll(".fw-particle").forEach(p=>p.remove());
+  boom();
+  setTimeout(boom,500);
+  setTimeout(boom,1000);
+}
+document.getElementById("celebrateCloseBtn").addEventListener("click",()=>{
+  celebrateOverlay.classList.remove("show");
+});
 
 function tick(){
   if(inOverlay) return;
