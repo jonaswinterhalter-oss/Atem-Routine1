@@ -65,7 +65,35 @@
   .mf-eyebrow{font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); margin:0 0 10px; font-weight:700}
   .mf-modline{font-size:18px; font-weight:500; color:var(--ink); margin:0; text-align:center; padding:0 32px}
   .mf-preview{font-size:12.5px; color:var(--muted); margin:8px 0 0; text-align:center; padding:0 36px; max-width:340px; line-height:1.5}
-  .mf-countdown{font-family:var(--mono); font-size:88px; font-weight:700; color:var(--accent); line-height:1; margin-top:22px}
+  .mf-loadbar{width:180px; height:5px; background:var(--border); border-radius:3px; overflow:hidden; margin-top:26px}
+  .mf-loadfill{height:100%; width:0%; background:var(--accent); border-radius:3px}
+  .bg-glow{
+    position:fixed; top:0; left:0; right:0; bottom:0; z-index:0; pointer-events:none;
+    animation:bg-glow-color 2.4s linear infinite;
+  }
+  @keyframes bg-glow-color{
+    0%{background:#C79A3A}
+    25%{background:#D45C79}
+    50%{background:#39B5A8}
+    75%{background:#9B7FE0}
+    100%{background:#C79A3A}
+  }
+  .cc-visual{position:relative; z-index:1; width:120px; height:120px; margin:0 auto}
+  .cc-check{width:100px; height:100px; display:block; margin:10px auto 0}
+  .cc-circle{fill:none; stroke:var(--accent); stroke-width:2.4; stroke-dasharray:145; stroke-dashoffset:145}
+  .cc-tick{fill:none; stroke:var(--accent); stroke-width:3.6; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:36; stroke-dashoffset:36}
+  .fw-origin{position:absolute; left:50%; top:48%; width:0; height:0; z-index:2}
+  .fw-flash{position:absolute; left:0; top:0; width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; opacity:0; background:radial-gradient(circle, rgba(237,173,46,0.95) 0%, rgba(237,173,46,0) 70%)}
+  .fw-flash.go{animation:fw-flash .55s ease-out}
+  @keyframes fw-flash{0%{opacity:1; transform:scale(.3)}100%{opacity:0; transform:scale(9)}}
+  .fw-particle{position:absolute; left:0; top:0; border-radius:50%; opacity:0; animation:fw-burst var(--fwdur,900ms) ease-out forwards; animation-delay:var(--fwdelay,0ms)}
+  @keyframes fw-burst{
+    0%{transform:translate(-50%,-50%) scale(.5); opacity:1}
+    65%{opacity:1}
+    100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(.1); opacity:0}
+  }
+  .cc-heading{position:relative; z-index:1; font-size:22px; font-weight:700; color:var(--ink); margin:14px 0 10px; text-shadow:0 1px 8px rgba(0,0,0,.55)}
+  .cc-body{position:relative; z-index:1; font-size:13px; color:var(--ink); opacity:.9; line-height:1.6; text-align:center; max-width:300px; margin:0 0 26px; text-shadow:0 1px 8px rgba(0,0,0,.55)}
 </style>
 </head>
 <body>
@@ -73,7 +101,20 @@
   <p class="mf-eyebrow">Modul startet</p>
   <p class="mf-modline"><span id="mfNum">01</span> · <span id="mfName">Reflex-Einatmung</span></p>
   <p class="mf-preview" id="mfPreview">Blitzartig einatmen, sofort auf sssssss ausatmen</p>
-  <p class="mf-countdown" id="mfCountdown">3</p>
+  <div class="mf-loadbar"><div class="mf-loadfill" id="mfLoadFill"></div></div>
+</div>
+<div class="moduleflash" id="celebrateOverlay">
+  <div class="bg-glow"></div>
+  <div class="cc-visual" id="ccVisual">
+    <svg class="cc-check" id="ccCheck" viewBox="0 0 52 52">
+      <circle class="cc-circle" id="ccCircle" cx="26" cy="26" r="23"/>
+      <path class="cc-tick" id="ccTick" d="M14 27l7 7 16-16"/>
+    </svg>
+    <div class="fw-origin" id="fwOrigin"><div class="fw-flash" id="fwFlash"></div></div>
+  </div>
+  <p class="cc-heading">Geschafft!</p>
+  <p class="cc-body">Starke Leistung! Komm morgen wieder für die nächste Einheit.</p>
+  <button id="celebrateCloseBtn">Schliessen</button>
 </div>
 <div class="wrap">
   <header>
@@ -159,7 +200,10 @@ const els={
  stepDesc:document.getElementById('stepDesc'),playBtn:document.getElementById('playBtn'),
  grandTotal:document.getElementById('grandTotal'),moduleFlash:document.getElementById('moduleFlash'),
  mfNum:document.getElementById('mfNum'),mfName:document.getElementById('mfName'),
- mfPreview:document.getElementById('mfPreview'),mfCountdown:document.getElementById('mfCountdown')
+ mfPreview:document.getElementById('mfPreview'),mfLoadFill:document.getElementById('mfLoadFill'),
+ celebrateOverlay:document.getElementById('celebrateOverlay'),
+ fwOrigin:document.getElementById('fwOrigin'),fwFlash:document.getElementById('fwFlash'),
+ ccCircle:document.getElementById('ccCircle'),ccTick:document.getElementById('ccTick')
 };
 steps.forEach((s,i)=>{const d=document.createElement('div');d.className='seg'+(i===0?' active':'');els.seg.appendChild(d);});
 
@@ -204,22 +248,67 @@ function showModuleFlash(onDone){
   els.mfName.textContent=steps[cur].name.replace(/^\d+\s*\u00b7\s*/,'');
   els.mfPreview.textContent=steps[cur].preview||'';
   els.moduleFlash.classList.add('show');
-  let n=3;
-  els.mfCountdown.textContent=n;
+  els.mfLoadFill.style.transition='none';
+  els.mfLoadFill.style.width='0%';
+  void els.mfLoadFill.offsetWidth;
+  els.mfLoadFill.style.transition='width 1.5s linear';
+  els.mfLoadFill.style.width='100%';
   clearTimeout(flashTimer);
-  (function step(){
-    flashTimer=setTimeout(()=>{
-      n--;
-      if(n>0){
-        els.mfCountdown.textContent=n;
-        step();
-      } else {
-        els.moduleFlash.classList.remove('show');
-        if(onDone) onDone();
-      }
-    },1000);
-  })();
+  flashTimer=setTimeout(()=>{
+    els.moduleFlash.classList.remove('show');
+    if(onDone) onDone();
+  },1500);
 }
+function spawnParticles(container,count){
+  const colors=['#EDAD2E','#F6C863','#FFE3A6','#FF8A4C','#FFFFFF'];
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');
+    p.className='fw-particle';
+    const angle=(Math.random()*150-75)*Math.PI/180; // upward cone, -75..+75deg from vertical
+    const dist=55+Math.random()*95;
+    const tx=Math.sin(angle)*dist;
+    const ty=-Math.cos(angle)*dist-15;
+    const size=3+Math.random()*4;
+    p.style.setProperty('--tx',tx.toFixed(1)+'px');
+    p.style.setProperty('--ty',ty.toFixed(1)+'px');
+    p.style.setProperty('--fwdur',(650+Math.random()*550)+'ms');
+    p.style.setProperty('--fwdelay',(Math.random()*220)+'ms');
+    p.style.width=size+'px';
+    p.style.height=size+'px';
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    p.style.boxShadow='0 0 6px 1px '+colors[Math.floor(Math.random()*colors.length)]+'99';
+    container.appendChild(p);
+  }
+}
+function boom(){
+  spawnParticles(els.fwOrigin,26);
+  els.fwFlash.classList.remove('go');
+  void els.fwFlash.offsetWidth;
+  els.fwFlash.classList.add('go');
+}
+function playCheckmark(){
+  els.ccCircle.style.strokeDashoffset='145';
+  els.ccTick.style.strokeDashoffset='36';
+  els.ccCircle.animate(
+    [{strokeDashoffset:145},{strokeDashoffset:0}],
+    {duration:800, easing:'ease-out', fill:'forwards'}
+  );
+  els.ccTick.animate(
+    [{strokeDashoffset:36},{strokeDashoffset:0}],
+    {duration:450, delay:750, easing:'ease-out', fill:'forwards'}
+  );
+}
+function showCelebration(){
+  els.celebrateOverlay.classList.add('show');
+  els.fwOrigin.querySelectorAll('.fw-particle').forEach(p=>p.remove());
+  playCheckmark();
+  boom();
+  setTimeout(boom,500);
+  setTimeout(boom,1000);
+}
+document.getElementById('celebrateCloseBtn').addEventListener('click',()=>{
+  els.celebrateOverlay.classList.remove('show');
+});
 function loadStep(){
   phaseIdx=0;
   started=false;
@@ -282,7 +371,7 @@ function tick(){
     // CURRENT phase has fully finished, even if that overruns the nominal time
     if(stepLeft<=0){
       if(cur<steps.length-1){cur++;loadStep();}
-      else{pause();els.stepDesc.textContent='Fertig. Alle sechs Module durchlaufen.';}
+      else{pause();els.stepDesc.textContent='Fertig. Alle sechs Module durchlaufen.';showCelebration();}
     } else if(phaseIdx<steps[cur].phases.length-1){
       phaseIdx++;loadPhase();
     } else {
