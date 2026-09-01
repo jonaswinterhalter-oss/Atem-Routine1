@@ -37,6 +37,15 @@
   .prepIcon{font-size:38px; margin-bottom:8px}
   .prepText{font-size:17px; font-weight:700; color:var(--ink); margin:0 0 10px; max-width:300px; line-height:1.4}
   .prepCount{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:54px; font-weight:700; color:var(--accent); margin:0; transition:color .3s}
+  .miniTransition{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:var(--card); opacity:0; pointer-events:none; transition:opacity .35s ease;
+  }
+  .miniTransition.show{opacity:1; pointer-events:auto}
+  .miniEmoji{font-size:56px; margin-bottom:18px; animation:mini-pop .4s ease-out}
+  @keyframes mini-pop{0%{transform:scale(0.5); opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1); opacity:1}}
+  .mini-loadbar{width:160px; height:6px; background:#eee9db; border-radius:3px; overflow:hidden}
+  .mini-loadfill{height:100%; width:0%; background:var(--accent); border-radius:3px}
   .circle-wrap{width:190px; height:190px; margin:4px auto 2px; display:flex; align-items:center; justify-content:center}
   .circle{
     width:150px; height:150px; border-radius:50%;
@@ -126,9 +135,13 @@
         <p class="prepText" id="prepText">Gleich geht's los!</p>
         <p class="prepCount" id="prepCount">10</p>
       </div>
+      <div class="miniTransition" id="miniTransition">
+        <div class="miniEmoji" id="miniEmoji">👍</div>
+        <div class="mini-loadbar"><div class="mini-loadfill" id="miniLoadFill"></div></div>
+      </div>
     </div>
     <div class="bar-track"><div class="bar-fill" id="stepFill"></div></div>
-    <div class="times"><span id="stepTimeLeft">0:45</span><span id="totalTime">Gesamt 5:13</span></div>
+    <div class="times"><span id="stepTimeLeft">0:45</span><span id="totalTime">Gesamt 5:19</span></div>
     <div class="controls">
       <button id="playBtn">▶ Start</button>
       <button class="secondary" id="skipBtn">⏭ Weiter</button>
@@ -157,7 +170,8 @@ stepFill=document.getElementById("stepFill"),stepTimeLeft=document.getElementByI
 totalTime=document.getElementById("totalTime"),playBtn=document.getElementById("playBtn"),
 dotsEl=document.getElementById("dots"),stepCounter=document.getElementById("stepCounter"),card=document.getElementById("card"),
 phaseWord=document.getElementById("phaseWord"),prepOverlay=document.getElementById("prepOverlay"),
-prepIcon=document.getElementById("prepIcon"),prepText=document.getElementById("prepText"),prepCount=document.getElementById("prepCount");
+prepIcon=document.getElementById("prepIcon"),prepText=document.getElementById("prepText"),prepCount=document.getElementById("prepCount"),
+miniTransition=document.getElementById("miniTransition"),miniEmoji=document.getElementById("miniEmoji"),miniLoadFill=document.getElementById("miniLoadFill");
 
 function hexToRgba(hex,a){hex=hex.replace("#","");const r=parseInt(hex.substring(0,2),16),g=parseInt(hex.substring(2,4),16),b=parseInt(hex.substring(4,6),16);return "rgba("+r+","+g+","+b+","+a+")";}
 function shadowFor(color,big){return big?("0 0 60px 16px "+hexToRgba(color,0.55)):("0 0 14px 2px "+hexToRgba(color,0.2));}
@@ -180,7 +194,7 @@ steps.forEach((s,i)=>{const d=document.createElement("div");d.className="dot"+(i
 function fmt(t){t=Math.max(0,Math.round(t));const m=Math.floor(t/60),s=t%60;return m+":"+String(s).padStart(2,"0");}
 function totalRemaining(curStepLeft){
   let r=curStepLeft;
-  for(let i=cur+1;i<steps.length;i++){ if(steps[i].preRoll) r+=steps[i].preRoll.dur; r+=steps[i].dur; }
+  for(let i=cur+1;i<steps.length;i++){ if(steps[i].preRoll) r+=steps[i].preRoll.dur; else r+=1.5; r+=steps[i].dur; }
   return r;
 }
 function showPrepOverlay(preRoll,onDone){
@@ -199,13 +213,32 @@ function showPrepOverlay(preRoll,onDone){
     },1000);
   })();
 }
+const miniEmojis=["👍","🌟","✨","💪","🙌","🎈","👏","🔥","😊","🚀"];
+let miniEmojiIdx=0;
+function showMiniTransition(onDone){
+  inOverlay=true;
+  miniEmoji.textContent=miniEmojis[miniEmojiIdx % miniEmojis.length];
+  miniEmojiIdx++;
+  miniTransition.classList.add("show");
+  miniLoadFill.style.transition="none";
+  miniLoadFill.style.width="0%";
+  void miniLoadFill.offsetWidth;
+  miniLoadFill.style.transition="width 1.5s linear";
+  miniLoadFill.style.width="100%";
+  clearTimeout(overlayTimer);
+  overlayTimer=setTimeout(()=>{
+    miniTransition.classList.remove("show");
+    inOverlay=false;
+    if(onDone) onDone();
+  },1500);
+}
 function goToStep(i){
   const target=steps[i];
+  document.documentElement.style.setProperty("--accent", target.color);
   if(target.preRoll){
-    document.documentElement.style.setProperty("--accent", target.color);
     showPrepOverlay(target.preRoll, ()=>loadStep(i));
   } else {
-    loadStep(i);
+    showMiniTransition(()=>loadStep(i));
   }
 }
 
