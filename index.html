@@ -56,6 +56,15 @@
   .circle .phase{font-size:36px; line-height:1}
   .idle .circle{animation:pulse 4.5s ease-in-out infinite}
   @keyframes pulse{0%,100%{transform:scale(0.7)}50%{transform:scale(1.05)}}
+  .wavebox-outer{display:none}
+  .wavemode .circle-wrap{display:none}
+  .wavemode .wavebox-outer{display:block}
+  .wavebox{width:100%; max-width:320px; height:170px; margin:4px auto 2px; background:#eef6f5; border-radius:16px; position:relative; overflow:hidden}
+  .wavebox svg{width:100%; height:100%; display:block}
+  #waveSvgEl{opacity:1}
+  .wavepath{fill:none; stroke:var(--accent); stroke-width:3.5; stroke-linecap:round; opacity:0; transition:opacity .2s ease}
+  .wavepath.show{opacity:.8}
+  .wavedot{transition:none}
   .phaseWord{font-size:17px; font-weight:700; letter-spacing:.02em; min-height:24px; margin:2px 0 4px; transition:color .3s}
   .counter{font-size:12px; color:var(--muted); margin:2px 0}
   .name{font-size:19px; font-weight:700; margin:2px 0 8px}
@@ -126,8 +135,16 @@
     <div class="dots" id="dots"></div>
     <div class="stage">
       <div class="circle-wrap"><div class="circle" id="circle"><span class="phase" id="phaseLabel"></span></div></div>
+      <div class="wavebox-outer" id="waveBoxOuter">
+        <div class="wavebox">
+          <svg viewBox="0 0 300 160" id="waveSvgEl">
+            <path class="wavepath" id="wavePathEl" d=""/>
+            <circle class="wavedot" id="waveDotEl" cx="20" cy="80" r="6"/>
+          </svg>
+        </div>
+      </div>
       <p class="phaseWord" id="phaseWord">&nbsp;</p>
-      <p class="counter" id="stepCounter">Schritt 1 von 6</p>
+      <p class="counter" id="stepCounter">Schritt 1 von 7</p>
       <p class="name" id="stepName">Aufwecken</p>
       <p class="instr" id="stepInstr"></p>
       <div class="prepOverlay" id="prepOverlay">
@@ -141,7 +158,7 @@
       </div>
     </div>
     <div class="bar-track"><div class="bar-fill" id="stepFill"></div></div>
-    <div class="times"><span id="stepTimeLeft">0:45</span><span id="totalTime">Gesamt 5:19</span></div>
+    <div class="times"><span id="stepTimeLeft">0:45</span><span id="totalTime">Gesamt 6:01</span></div>
     <div class="controls">
       <button id="playBtn">▶ Start</button>
       <button class="secondary" id="skipBtn">⏭ Weiter</button>
@@ -149,7 +166,7 @@
     </div>
   </div>
 
-  <p class="tip">Kreis wird groß = einatmen, wird klein = ausatmen. Bei Schwindel: hinsetzen und ruhig durch die Nase weiteratmen.</p>
+  <p class="tip">Kreis wird groß = einatmen, wird klein = ausatmen. Bei der letzten Übung: Punkt auf der Linie folgt der Tonhöhe. Bei Schwindel: hinsetzen und ruhig durch die Nase weiteratmen.</p>
   <p class="credit">Übungen angelehnt an „The Breathing Gym" von Sam Pilafian und Patrick Sheridan.</p>
 </div>
 
@@ -160,7 +177,8 @@ const steps=[
 {name:"Ruhiger Luftstrom",instr:"Arme seitlich hoch beim Einatmen, runter beim Ausatmen. Die Luft fließt die ganze Zeit gleichmäßig, nie gepresst.",dur:84,emoji:"↕️",color:"#639922",tint:"#eaf3de",mode:"pacer",inhale:7,exhale:7},
 {name:"Papierflieger pusten",instr:"Kurz und locker einatmen. Dann die Luft ganz sanft rausströmen lassen – Lippen bleiben locker geöffnet, nicht geschlossen.",dur:66,emoji:"✈️",color:"#ef9f27",tint:"#faeeda",mode:"pacer",inhale:4,exhale:7},
 {name:"Ruhig ankommen",instr:"Normal weiteratmen, durch die Nase ein, durch den Mund aus. Einfach dem Atem folgen, ohne zu zählen.",dur:45,emoji:"🌙",color:"#7f77dd",tint:"#eeedfe",mode:"idle"},
-{name:"Bereit für die Trompete",instr:"Mundstück oder Trompete nehmen. Entspannt einatmen und die Luft sanft rausströmen lassen – Lippen bleiben locker, nicht geschlossen.",dur:30,emoji:"🎺",color:"#d4537e",tint:"#fbeaf0",mode:"idle",preRoll:{text:"Mundstück oder Trompete bereit machen, gleich geht es weiter",icon:"⏳",dur:10}}
+{name:"Bereit für die Trompete",instr:"Mundstück oder Trompete nehmen. Entspannt einatmen und die Luft sanft rausströmen lassen – Lippen bleiben locker, nicht geschlossen.",dur:30,emoji:"🎺",color:"#d4537e",tint:"#fbeaf0",mode:"idle",preRoll:{text:"Mundstück oder Trompete bereit machen, gleich geht es weiter",icon:"⏳",dur:10}},
+{name:"Aufwärmen mit dem Mundstück",instr:"Lasse deinen Ton der Linie folgen.",dur:40,emoji:"🎵",color:"#1f9e9c",tint:"#e3f6f5",mode:"wavefollow"}
 ];
 let cur=0,running=false,mainTimer=null,phase="in",phaseStartAt=0,stepStartAt=0,pausedAt=0,inOverlay=false,overlayTimer=null;
 function now(){return performance.now()/1000;}
@@ -171,7 +189,9 @@ totalTime=document.getElementById("totalTime"),playBtn=document.getElementById("
 dotsEl=document.getElementById("dots"),stepCounter=document.getElementById("stepCounter"),card=document.getElementById("card"),
 phaseWord=document.getElementById("phaseWord"),prepOverlay=document.getElementById("prepOverlay"),
 prepIcon=document.getElementById("prepIcon"),prepText=document.getElementById("prepText"),prepCount=document.getElementById("prepCount"),
-miniTransition=document.getElementById("miniTransition"),miniEmoji=document.getElementById("miniEmoji"),miniLoadFill=document.getElementById("miniLoadFill");
+miniTransition=document.getElementById("miniTransition"),miniEmoji=document.getElementById("miniEmoji"),miniLoadFill=document.getElementById("miniLoadFill"),
+waveBoxOuter=document.getElementById("waveBoxOuter"),
+waveSvgEl=document.getElementById("waveSvgEl"),wavePathEl=document.getElementById("wavePathEl"),waveDotEl=document.getElementById("waveDotEl");
 
 function hexToRgba(hex,a){hex=hex.replace("#","");const r=parseInt(hex.substring(0,2),16),g=parseInt(hex.substring(2,4),16),b=parseInt(hex.substring(4,6),16);return "rgba("+r+","+g+","+b+","+a+")";}
 function shadowFor(color,big){return big?("0 0 60px 16px "+hexToRgba(color,0.55)):("0 0 14px 2px "+hexToRgba(color,0.2));}
@@ -190,6 +210,71 @@ function goPhase(big,color,dur){
 }
 
 steps.forEach((s,i)=>{const d=document.createElement("div");d.className="dot"+(i===0?" active":"");dotsEl.appendChild(d);});
+
+const WF_PHASES=[{type:"inhale",dur:2},{type:"travel",dur:6}];
+const WF_R_SMALL=6, WF_R_INHALE_MAX=17, WF_R_TRAVEL=8;
+const WF_ACCENT_MUTED="rgba(31,158,156,0.4)";
+let waveSubPhase=0,waveSubStartAt=0,waveDotTotalLen=0;
+let waveSessionPatterns=[],wavePatternIdx=0;
+
+function randomWavePath(){
+  const SEG=3,MX=20,W=300,MINY=25,MAXY=135;
+  const segW=(W-2*MX)/SEG;
+  const points=[{x:MX,y:80}];
+  let prevY=80;
+  for(let i=1;i<=SEG;i++){
+    let y;
+    do{ y=MINY+Math.random()*(MAXY-MINY); }while(Math.abs(y-prevY)<28);
+    points.push({x:MX+segW*i,y});
+    prevY=y;
+  }
+  let d="M"+points[0].x+","+points[0].y;
+  for(let i=1;i<points.length;i++){
+    const p0=points[i-1],p1=points[i];
+    const midX=(p0.x+p1.x)/2;
+    d+=" C"+midX+","+p0.y+" "+midX+","+p1.y+" "+p1.x+","+p1.y;
+  }
+  return d;
+}
+function generateWaveSession(){
+  waveSessionPatterns=[];
+  for(let i=0;i<5;i++){ waveSessionPatterns.push(randomWavePath()); }
+  wavePatternIdx=0;
+}
+function nextWavePattern(){
+  if(waveSessionPatterns.length===0) generateWaveSession();
+  const d=waveSessionPatterns[wavePatternIdx%waveSessionPatterns.length];
+  wavePatternIdx++;
+  return d;
+}
+function enterWaveSubPhase(){
+  const wp=WF_PHASES[waveSubPhase];
+  if(wp.type==="inhale"){
+    // the same dot stays visible the whole time: it just grows in place
+    // here, muted-colored, then snaps small + full color the instant
+    // travel begins -- no hide/show, no gap, no pause between the two.
+    // the line for the upcoming round is drawn now too, so the player
+    // can already see the phrase shape while still breathing in.
+    phaseWord.textContent="Einatmen";
+    const d=nextWavePattern();
+    wavePathEl.setAttribute("d", d);
+    wavePathEl.classList.add("show");
+    waveDotTotalLen=wavePathEl.getTotalLength();
+    waveDotEl.setAttribute("cx",20);waveDotEl.setAttribute("cy",80);
+    waveDotEl.setAttribute("r",WF_R_SMALL);
+    waveDotEl.style.fill=WF_ACCENT_MUTED;
+  } else if(wp.type==="travel"){
+    // abrupt change happens right here, same frame inhale ends in --
+    // smaller radius + full color, both instant, movement starts immediately.
+    // the line is already drawn from the inhale phase, so travel just
+    // starts moving along it from the beginning.
+    waveDotEl.setAttribute("r",WF_R_TRAVEL);
+    waveDotEl.style.fill="";
+    phaseWord.textContent="Ton halten & Linie folgen";
+    const pt=wavePathEl.getPointAtLength(0);
+    waveDotEl.setAttribute("cx",pt.x);waveDotEl.setAttribute("cy",pt.y);
+  }
+}
 
 function fmt(t){t=Math.max(0,Math.round(t));const m=Math.floor(t/60),s=t%60;return m+":"+String(s).padStart(2,"0");}
 function totalRemaining(curStepLeft){
@@ -255,7 +340,7 @@ function loadStep(i){
   stepTimeLeft.textContent=fmt(s.dur);totalTime.textContent="Gesamt "+fmt(totalRemaining(s.dur));
   stepFill.style.width="0%";
   document.querySelectorAll(".dot").forEach((d,idx)=>{d.classList.toggle("active",idx===i);d.classList.toggle("done",idx<i);});
-  card.classList.remove("idle");
+  card.classList.remove("idle","wavemode");
   circle.style.background=s.color;
   circle.querySelector(".phase").textContent=s.emoji;
   phaseWord.style.color=s.color;
@@ -265,6 +350,12 @@ function loadStep(i){
     phaseStartAt=now();
     goPhase(true,s.color,s.inhale);
     phaseWord.textContent="Einatmen";
+  } else if(s.mode==="wavefollow"){
+    card.classList.add("wavemode");
+    generateWaveSession();
+    waveSubPhase=0;
+    waveSubStartAt=now();
+    enterWaveSubPhase();
   } else {
     circle.style.boxShadow="0 0 10px 1px "+hexToRgba(s.color,0.12);
     circle.style.transform="scale(0.85)";
@@ -341,6 +432,28 @@ function tick(){
       if(phase==="in"){phase="out";phaseStartAt=now();goPhase(false,col,s.exhale);phaseWord.textContent="Ausatmen";}
       else{phase="in";phaseStartAt=now();goPhase(true,col,s.inhale);phaseWord.textContent="Einatmen";}
     }
+  } else if(s.mode==="wavefollow"){
+    const wp=WF_PHASES[waveSubPhase];
+    const subElapsed=t-waveSubStartAt;
+    const subLeft=wp.dur-subElapsed;
+    const shown=stepLeft>0?stepLeft:subLeft;
+    stepTimeLeft.textContent=fmt(shown);totalTime.textContent="Gesamt "+fmt(totalRemaining(shown));
+    if(wp.type==="travel" && waveDotTotalLen){
+      const frac=Math.min(1,Math.max(0,subElapsed/wp.dur));
+      const pt=wavePathEl.getPointAtLength(frac*waveDotTotalLen);
+      waveDotEl.setAttribute("cx",pt.x);waveDotEl.setAttribute("cy",pt.y);
+    } else if(wp.type==="inhale"){
+      const frac=Math.min(1,Math.max(0,subElapsed/wp.dur));
+      waveDotEl.setAttribute("r",WF_R_SMALL+(WF_R_INHALE_MAX-WF_R_SMALL)*frac);
+    }
+    if(subLeft<=0){
+      // same principle as the breathing phases: never cut a micro-phase short,
+      // only check whether the module's time is up once it has fully finished
+      if(stepLeft<=0){advanceStep();return;}
+      waveSubPhase=(waveSubPhase+1)%WF_PHASES.length;
+      waveSubStartAt=now();
+      enterWaveSubPhase();
+    }
   } else {
     const shown=stepLeft>0?stepLeft:0;
     stepTimeLeft.textContent=fmt(shown);totalTime.textContent="Gesamt "+fmt(totalRemaining(shown));
@@ -351,7 +464,7 @@ function play(){
   running=true;
   if(pausedAt){
     const gap=now()-pausedAt;
-    phaseStartAt+=gap;stepStartAt+=gap;
+    phaseStartAt+=gap;stepStartAt+=gap;waveSubStartAt+=gap;
     pausedAt=0;
   }
   playBtn.textContent="⏸ Pause";
