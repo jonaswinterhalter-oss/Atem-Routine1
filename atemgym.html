@@ -52,7 +52,7 @@ h1 span{color:var(--brass)}
 .exFoot{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap}
 .tags{display:flex; gap:6px; flex-wrap:wrap}
 .tag{font-size:11px; color:var(--brass); border:1px solid var(--line); border-radius:999px; padding:2px 8px}
-.dots{font-size:12px; letter-spacing:2px; color:var(--brass)}
+.dots{font-size:12px; color:var(--muted)}
 .warnmark{color:var(--red); font-weight:700}
 
 /* player */
@@ -96,11 +96,11 @@ h1 span{color:var(--brass)}
 }
 .holdring{
   position:absolute; left:-9px; top:-9px; right:-9px; bottom:-9px; border-radius:50%;
-  border:3px dashed var(--red); opacity:0;
+  border:3px dashed var(--brass); opacity:0;
 }
 .stage[data-type=in]{--pc:var(--gold); --pcglow:var(--goldglow)}
 .stage[data-type=out]{--pc:var(--teal); --pcglow:var(--tealglow)}
-.stage[data-type=hold]{--pc:var(--gold); --pcglow:rgba(212,81,63,.25)}
+.stage[data-type=hold]{--pc:var(--gold); --pcglow:var(--goldglow)}
 .stage[data-type=hold] .holdring{opacity:1}
 .stage[data-type=rest]{--pc:var(--rest); --pcglow:var(--restglow)}
 .stage[data-type=rest] .orb{animation:glow 3s ease-in-out infinite}
@@ -150,7 +150,7 @@ details textarea{width:100%; min-height:80px; border:1px solid var(--line); bord
   <section id="viewList">
     <div class="eyebrow">Atemübungen für Bläserinnen und Bläser</div>
     <h1>Atem <span>Gym</span></h1>
-    <p class="sub">Wähle einen Schwerpunkt oder stöbere durch alle Übungen. Jede Übung hat mehrere Stufen. Du bestimmst selbst, wann du zur nächsten Stufe gehst.</p>
+    <p class="sub">Wähle einen Schwerpunkt oder stöbere durch alle Übungen. Viele Übungen haben mehrere Varianten, die du frei wählen kannst. Wiederholen lohnt sich.</p>
     <div class="chips" id="chips"></div>
     <div class="list" id="list"></div>
 
@@ -172,6 +172,7 @@ details textarea{width:100%; min-height:80px; border:1px solid var(--line); bord
     <button class="back" id="btnBack" type="button">← Alle Übungen</button>
     <div class="eyebrow" id="pCat"></div>
     <div class="pTitle" id="pTitle"></div>
+    <div class="small" id="pStats" style="margin-bottom:8px"></div>
     <p class="pDesc" id="pDesc"></p>
 
     <div class="warn" id="warnBox" hidden>
@@ -205,15 +206,15 @@ details textarea{width:100%; min-height:80px; border:1px solid var(--line); bord
 
       <div class="finish" id="finish" hidden>
         <h3>Geschafft!</h3>
-        <p id="finishText">Wie fühlte sich diese Stufe an? Wenn sie sich mühelos und ruhig anfühlt, markiere sie als „sitzt“.</p>
+        <p id="finishText"></p>
         <div class="ctrl">
-          <button class="btn" id="btnDone" type="button">Stufe sitzt ✓</button>
-          <button class="btn sec" id="btnAgain" type="button">Nochmal</button>
+          <button class="btn" id="btnAgain" type="button">Nochmal</button>
+          <button class="btn sec" id="btnDone" type="button">Fertig</button>
         </div>
       </div>
 
       <div class="opts">
-        <div class="opt"><label for="bpm">Tempo</label><input type="range" id="bpm" min="48" max="100" step="2"><span class="val" id="bpmVal"></span></div>
+        <div class="opt"><label for="bpm">Tempo</label><input type="range" id="bpm" min="40" max="150" step="2"><span class="val" id="bpmVal"></span></div>
         <div class="opt"><label>Klick</label><button class="tog on" id="btnClick" type="button">🔔 an</button><span class="small" id="clickHint">Ein Klick = ein Count. Der erste Klick jeder Phase ist betont.</span></div>
       </div>
       <p class="small" style="margin:10px 0 0" id="durInfo"></p>
@@ -234,180 +235,186 @@ const FOCI=[
   {id:"ruhe", name:"Ruhe & Fokus"}
 ];
 
-const WORDS={prep:"Einzählen",in:"Einatmen",out:"Ausatmen",hold:"Halten",rest:"Pause"};
+const WORDS={prep:"Einzählen",in:"Einatmen",out:"Ausatmen",hold:"Offen halten",rest:"Pause"};
 const P=(type,counts,o)=>Object.assign({type,counts},o||{});
 
 /* Hilfsbauer */
-function pairSeq(list,cue){           // [[in,out],...] -> Einatmen/Ausatmen-Paare
-  const n=list.length, out=[];
+function pairSeq(list,cue,label){       // [[ein,aus],...] -> Einatmen/Ausatmen-Paare
+  const n=list.length, out=[], lb=label||"Atemzug";
   list.forEach((pr,i)=>{
-    const tag="Atemzug "+(i+1)+" von "+n;
+    const tag=lb+" "+(i+1)+" von "+n;
     const a=P("in",pr[0],{tag}), b=P("out",pr[1],{tag});
     if(cue&&i===0){a.cue=cue;}
     out.push(a,b);
   });
   return out;
 }
-function rounds(n,make,restCounts){
+function rounds(n,make){
   const out=[];
   for(let i=0;i<n;i++){
-    if(i>0&&restCounts) out.push(P("rest",restCounts,{cue:"Normal weiteratmen",tag:"Kurze Pause"}));
     make(i).forEach(p=>{ if(!p.tag) p.tag="Runde "+(i+1)+" von "+n; out.push(p); });
   }
   return out;
 }
 const rep=(list,k)=>{let r=[]; for(let i=0;i<k;i++) r=r.concat(list); return r;};
 const each=(list,k)=>{let r=[]; list.forEach(x=>{for(let i=0;i<k;i++) r.push(x);}); return r;};
+/* Wiederholungen so, dass sie etwa "sec" Sekunden dauern (Counts pro Muster = cpp) */
+const repsFor=(sec,bpm,cpp)=>Math.max(1,Math.round(sec*bpm/60/cpp));
 
-const HYPER_WARN="Diese Übung kann leichten Schwindel auslösen, weil du schneller und häufiger atmest als sonst (milde Hyperventilation). Atme zwischendurch ruhig und lasse dir Zeit. Wird dir schwindlig, setze dich hin und atme ein paar Atemzüge ruhig durch die Nase. Gehe erst zur nächsten Stufe, wenn die aktuelle für dich mühelos ist. Bei gesundheitlichen Problemen (z. B. Herz, Kreislauf, Atemwege, Schwangerschaft) sprich vorher mit deiner Ärztin oder deinem Arzt.";
-
-/* ===== Übungen ===== */
+/* ===== Übungen (nach The Breathing Gym, in eigenen Worten) ===== */
 const EXS=[
  {
-  id:"x2", num:2, name:"6-7-8-9-10 · Ausatmen verlängern", cat:"Flow Study",
-  focus:["aus"], intensity:1, bpm:72,
-  desc:"Du atmest in 4 Counts ein und verlängerst die Ausatmung von Runde zu Runde. So lernst du, die Luft gleichmäßig und ohne Ruck fließen zu lassen.",
-  hint:"Ausatmen wie durch einen dünnen Strohhalm: gleichmäßig, ohne Druckstöße. Schultern bleiben locker.",
+  id:"x2", num:2, name:"6-7-8-9-10", cat:"Flow Study",
+  focus:["aus"], intensity:1, bpm:72, tempoNote:"Buch: Viertel = 72",
+  desc:"Du atmest 6 Counts ein und 6 Counts aus, dann 7 und 7, 8 und 8, 9 und 9, 10 und 10. Die Arme gehen beim Einatmen seitlich nach oben und beim Ausatmen wieder nach unten. So übst du, Luft langsam und gleichmäßig fließen zu lassen.",
+  hint:"Mund wie bei „Oh“ oder „Whoa“. Gleichmäßig über die ganze Zählzeit atmen, Richtungswechsel weich, die Luft bleibt immer in Bewegung.",
   levels:[
-   {desc:"Ausatmen 6, 7, 8, 9, 10 Counts",   build:()=>{const a=[6,7,8,9,10]; return rounds(a.length,i=>[P("in",4),P("out",a[i])]);}},
-   {desc:"Ausatmen 8 bis 12 Counts",         build:()=>{const a=[8,9,10,11,12]; return rounds(a.length,i=>[P("in",4),P("out",a[i])]);}},
-   {desc:"Ausatmen 10 bis 15 Counts",        build:()=>{const a=[10,11,12,13,14,15]; return rounds(a.length,i=>[P("in",4),P("out",a[i])]);}},
-   {desc:"Ausatmen 15, 20, 25, 30 Counts",   note:"Wird die Luft knapp, höre sauber auf. Nichts erzwingen.", build:()=>{const a=[15,20,25,30]; return rounds(a.length,i=>[P("in",4),P("out",a[i])]);}},
-   {desc:"Ausatmen 30, 40, 50, 60 Counts",   note:"Sehr lang: Das Tempo darfst du ruhig senken.", build:()=>{const a=[30,40,50,60]; return rounds(a.length,i=>[P("in",4),P("out",a[i])]);}}
+   {tag:"6–10", desc:"6, 7, 8, 9, 10 Counts (Ein = Aus)", build:()=>a2([6,7,8,9,10])},
+   {tag:"10–15", desc:"Variation 2a: 10, 11, 12, 13, 14, 15 Counts", build:()=>a2([10,11,12,13,14,15])},
+   {tag:"15–30", desc:"Variation 2a: 15, 20, 25, 30 Counts", build:()=>a2([15,20,25,30])},
+   {tag:"30–60", desc:"Variation 2a: 30, 40, 50, 60 Counts. Das Buch nennt 30–60 als hohes Ziel, das man schrittweise erreicht.", build:()=>a2([30,40,50,60])}
   ]
  },
  {
   id:"x5", num:5, name:"Ausatem-Therapie", cat:"Therapie",
-  focus:["aus"], intensity:3, bpm:60,
-  desc:"Tief einatmen, kurz halten und dann kraftvoll ausatmen. Mitten im Ausatmen gibt es einen kleinen Stopp, danach geht die Luft weiter. Das löst Verspannung und weckt den Ausatemmuskel.",
-  hint:"Beim kräftigen Ausatmen mit dem Bauch arbeiten, nicht mit dem Hals. Der Stopp ist kurz und ohne Verkrampfen.",
-  note:"Kräftige Ausatmung: Wenn dir schwindlig wird, mache eine Pause und atme normal weiter.",
+  focus:["aus"], intensity:3, bpm:60, tempoNote:"Im Buch ohne Tempoangabe",
+  desc:"Du atmest 4 Counts ein und lässt die Luft 4 Counts lang offen „schweben“. Dann bläst du die Hälfte kräftig aus, stoppst kurz und presst den Rest mit festem Bauch heraus. Drei Runden hintereinander, jede tiefer als die vorige.",
+  hint:"Beim Schweben nicht wie unter Wasser anhalten: Mund und Luftweg bleiben offen, die Luft ist nur sehr langsam unterwegs.",
   levels:[
-   {tag:"1", desc:"Eine Runde: Ein 4, Halten 4, Aus 2, Stopp 1, Aus 2",
-    build:()=>rounds(1,()=>r5(4,4,2,1,"Tief einatmen"))},
-   {tag:"2", desc:"Drei Runden: tief, tiefer, am tiefsten",
-    build:()=>rounds(3,i=>{const w=["tief","tiefer","am tiefsten"][i]; return r5(4,4,2,1,"Atme "+w+" ein").map(p=>Object.assign(p,{tag:"Runde "+(i+1)+" von 3 · "+w}));},4)},
-   {tag:"3", desc:"Länger: Ein 6, Halten 6, Aus 3, Stopp 1, Aus 3 (2 Runden)",
-    build:()=>rounds(2,()=>r5(6,6,3,1,"Tief einatmen"),4)},
-   {tag:"5a", desc:"Lang einatmen (16), Halten 4, dann ein einziger kräftiger Stoß (1 Count). 2 Runden",
-    build:()=>rounds(2,()=>[P("in",16,{cue:"Langsam und tief einatmen"}),P("hold",4,{cue:"Halten"}),P("out",1,{cue:"Kräftig ausstoßen!"})],4)}
+   {tag:"Basis", desc:"Ein 4, Schweben 4, halb ausblasen, Stopp 1, Rest ausblasen. 3 Runden: tief, tiefer, am tiefsten", build:()=>rounds(3,i=>r5(4,4,2,1,i))},
+   {tag:"5a", desc:"Variation 5a: 16 Counts langsam einatmen, 4 schweben, dann die Luft in einem großen Stoß mit Stimme herauswerfen", build:()=>rounds(3,i=>[
+      P("in",16,{cue:"Langsam, gleichmäßig und weich einatmen"}),
+      P("hold",4,{label:"Offen schweben",cue:"Mund und Luftweg bleiben offen"}),
+      P("out",1,{cue:"Alles in einem Stoß, mit Stimme und festem Bauch"})])}
   ]
  },
  {
   id:"x7", num:7, name:"Einatmung verkürzen", cat:"Flow Study",
-  focus:["ein"], intensity:3, bpm:72, warning:HYPER_WARN,
-  desc:"Die Ausatmung bleibt gleich lang, die Einatmung wird Stufe für Stufe kürzer. Du trainierst, schnell und trotzdem tief Luft zu holen.",
-  hint:"Auch bei 1 Count: tief und entspannt einatmen, ohne die Schultern hochzuziehen. Mund offen und weit.",
+  focus:["ein"], intensity:3, bpm:72, tempoNote:"Buch: Viertel = 60–88",
+  desc:"Die Ausatmung bleibt bei 4 Counts, die Einatmung wird kürzer: 4/4, 3/4, 2/4 und 1/4, jedes Muster zweimal. Danach bleibst du beim Muster 1 ein, 4 aus. Die Luftmenge bleibt gleich, nur die Zeit zum Einatmen schrumpft.",
+  hint:"Mund wie bei „Oh“. Auch bei 1 Count tief und entspannt einatmen. Das Buch rät, die Dauer schrittweise zu steigern, z. B. jeden Tag eine Wiederholung mehr, bis 1 Minute möglich ist.",
   levels:[
-   {desc:"Je ein Atemzug: Ein/Aus 4/4, 3/4, 2/4, 1/4",
-    build:()=>pairSeq([[4,4],[3,4],[2,4],[1,4]])},
-   {desc:"Jeder Schritt zweimal: 4/4, 3/4, 2/4, 1/4",
-    build:()=>pairSeq(each([[4,4],[3,4],[2,4],[1,4]],2))},
-   {tag:"7a", desc:"Treppe: Ausatmen wird länger, Einatmen kürzer (bis 1/10)",
-    build:()=>pairSeq([[4,4],[3,5],[3,6],[2,7],[2,8],[1,9],[1,10]])},
-   {desc:"Stufe 2 zweimal hintereinander (16 Atemzüge)",
-    build:()=>pairSeq(rep(each([[4,4],[3,4],[2,4],[1,4]],2),2))}
+   {tag:"Kurz", desc:"Grundmuster, danach 1/4 für etwa 20 Sekunden", build:b=>s7(b,20)},
+   {tag:"Mittel", desc:"Grundmuster, danach 1/4 für etwa 40 Sekunden", build:b=>s7(b,40)},
+   {tag:"Lang", desc:"Grundmuster, danach 1/4 für etwa 60 Sekunden", build:b=>s7(b,60)},
+   {tag:"7a", desc:"Variation 7a: Ein/Aus 4/4, 3/5, 3/6, 2/7, 2/8, 1/9, 1/10", build:()=>pairSeq([[4,4],[3,5],[3,6],[2,7],[2,8],[1,9],[1,10]])}
   ]
  },
  {
-  id:"x8", num:8, name:"Spiegelbild: Ausatmung verkürzen", cat:"Flow Study",
-  focus:["aus"], intensity:3, bpm:72, warning:HYPER_WARN,
-  desc:"Das Gegenstück zur Einatem-Übung: Du atmest immer 4 Counts ein, die Ausatmung wird kürzer, bis sie nur noch 1 Count dauert.",
-  hint:"Beim kurzen Ausatmen trotzdem mit klarem, kräftigem Luftstrom arbeiten und nicht „verpuffen“ lassen.",
+  id:"x8", num:8, name:"Ausatmung verkürzen", cat:"Flow Study",
+  focus:["aus"], intensity:3, bpm:72, tempoNote:"Buch: Viertel = 60–88",
+  desc:"Die Einatmung bleibt bei 4 Counts, die Ausatmung wird kürzer: 4/4, 4/3, 4/2 und 4/1, jedes Muster zweimal. Danach bleibst du beim Muster 4 ein, 1 aus. Am Ende strömt die Luft viel schneller, als du sie im Spiel je brauchen würdest. Das stärkt die Bauchmuskeln.",
+  hint:"Mund wie bei „Oh“. Die Mundform bleibt gleich, nur der Luftstrom wird größer. Das Buch rät, die Dauer schrittweise zu steigern, bis 1 Minute möglich ist.",
   levels:[
-   {desc:"Je ein Atemzug: Ein/Aus 4/4, 4/3, 4/2, 4/1",
-    build:()=>pairSeq([[4,4],[4,3],[4,2],[4,1]])},
-   {desc:"Jeder Schritt zweimal",
-    build:()=>pairSeq(each([[4,4],[4,3],[4,2],[4,1]],2))},
-   {tag:"8a", desc:"Treppe: Einatmen wird länger, Ausatmen kürzer (bis 10/1)",
-    build:()=>pairSeq([[4,4],[5,3],[6,3],[7,2],[8,2],[9,1],[10,1]])},
-   {desc:"Stufe 2 zweimal hintereinander (16 Atemzüge)",
-    build:()=>pairSeq(rep(each([[4,4],[4,3],[4,2],[4,1]],2),2))}
+   {tag:"Kurz", desc:"Grundmuster, danach 4/1 für etwa 20 Sekunden", build:b=>s8(b,20)},
+   {tag:"Mittel", desc:"Grundmuster, danach 4/1 für etwa 40 Sekunden", build:b=>s8(b,40)},
+   {tag:"Lang", desc:"Grundmuster, danach 4/1 für etwa 60 Sekunden", build:b=>s8(b,60)},
+   {tag:"8a", desc:"Variation 8a: Ein/Aus 4/4, 5/3, 6/3, 7/2, 8/2, 9/1, 10/1", build:()=>pairSeq([[4,4],[5,3],[6,3],[7,2],[8,2],[9,1],[10,1]])}
   ]
  },
  {
-  id:"x9", num:9, name:"Beides verkürzen", cat:"Flow Study",
-  focus:["tempo"], intensity:3, bpm:72, warning:HYPER_WARN,
-  desc:"Ein- und Ausatmung werden gleichzeitig kürzer: von 4/4 bis 1/1. Du lernst, in jedem Tempo sauber zu atmen, etwa für schnelle Atemstellen.",
-  hint:"Rhythmus halten. Bei kurzen Atemzügen bleibt der Körper ruhig, die Arbeit macht das Zwerchfell.",
+  id:"x9", num:9, name:"Ein- und Ausatmung verkürzen", cat:"Flow Study",
+  focus:["tempo"], intensity:3, bpm:72, tempoNote:"Buch: Viertel = 60–88",
+  desc:"Beides wird gleichzeitig kürzer: 4/4, 3/3, 2/2 jeweils zweimal, dann 1/1. Du bleibst innerlich ruhig, obwohl es schnell wird. Das Buch nennt es ebenso eine Übung für den Kopf wie für die Kraft.",
+  hint:"Ruhig bleiben, auch wenn es sich anstrengend anfühlt: nicht „arbeiten“, sondern locker atmen (schnell, aber entspannt).",
   levels:[
-   {desc:"Je ein Atemzug: 4/4, 3/3, 2/2, 1/1",
-    build:()=>pairSeq([[4,4],[3,3],[2,2],[1,1]])},
-   {desc:"4/4 ×2, 3/3 ×2, 2/2 ×2, 1/1 ×4",
-    build:()=>pairSeq(b9())},
-   {desc:"Stufe 2 zweimal hintereinander",
-    build:()=>pairSeq(rep(b9(),2))},
-   {tag:"9a", desc:"Volle Version: bis Achtel und Sechzehntel, dann 1/1, 2/2, Pause mit Nasenatmung und ein Seufzer",
-    build:()=>pairSeq(b9().concat(rep([[0.5,0.5]],8),rep([[0.25,0.25]],8),[[1,1],[2,2]])).concat([
-      P("rest",20,{cue:"Ruhig durch die Nase atmen",tag:"Erholung"}),
-      P("in",2,{cue:"Seufzer: Luft laut und locker rauslassen",tag:"Seufzer"}),
-      P("out",4,{tag:"Seufzer"})
-    ])}
+   {tag:"Kurz", desc:"Grundmuster, danach 1/1 für etwa 20 Sekunden", build:b=>s9(b,20)},
+   {tag:"Mittel", desc:"Grundmuster, danach 1/1 für etwa 40 Sekunden", build:b=>s9(b,40)},
+   {tag:"Lang", desc:"Grundmuster, danach 1/1 für etwa 60 Sekunden", build:b=>s9(b,60)},
+   {tag:"9a", desc:"Variation 9a: 4/4 ×2, 3/3 ×2, 2/2 ×2, 1/1 ×4, Achtel ×8, 1/1 ×4, Sechzehntel ×8, 1/1, 2/2, 20 Counts Nasenatmung, lauter Seufzer", build:()=>s9a()}
   ]
  },
  {
-  id:"x12", num:12, name:"Luft halten mit Nachatmen", cat:"Kraft & Kapazität",
-  focus:["kap"], intensity:2, bpm:72,
-  desc:"Du atmest ein, hältst die Luft und nimmst dabei in kleinen Schlucken noch etwas Luft nach. Das weitet das Lungenvolumen, das du für lange Phrasen nutzen kannst.",
-  hint:"Beim Halten bleibt der Hals offen und der Körper locker. Die kleinen Schlucke sind sanft und kein Pressen.",
+  id:"x12", num:12, name:"5 ein, 15 halten, 5 aus", cat:"Kraft & Flexibilität",
+  focus:["kap"], intensity:2, bpm:72, tempoNote:"Buch: Viertel = 60–88",
+  desc:"Du atmest 5 Counts ein, lässt die Luft 15 Counts lang offen schweben und nimmst dabei alle paar Sekunden einen kleinen Schluck Luft nach. Dann atmest du in 5 Counts ganz aus. Dreimal, jedes Mal voller und leerer.",
+  hint:"Mund wie bei „Oh“ beim Einatmen. Die kleinen Schlucke sind sanft. Die Übung ist ein ruhiges Training, das auf die nächsten Übungen vorbereitet.",
   levels:[
-   {desc:"Ein 4, Halten 8, Aus 4. Zweimal",   build:()=>rounds(2,()=>r12(4,8),4)},
-   {desc:"Ein 5, Halten 10, Aus 5. Dreimal",  build:()=>rounds(3,()=>r12(5,10),4)},
-   {desc:"Ein 5, Halten 15, Aus 5. Dreimal",  build:()=>rounds(3,()=>r12(5,15),4)},
-   {desc:"Ein 6, Halten 20, Aus 6. Dreimal",  build:()=>rounds(3,()=>r12(6,20),4)}
+   {tag:"Basis", desc:"Ein 5, Schweben 15 mit Nachatmen, Aus 5. 3 Runden", build:()=>rounds(3,()=>[
+      P("in",5,{cue:"Ruhig und voll einatmen"}),
+      P("hold",15,{label:"Offen schweben",sips:4,cue:"Alle paar Sekunden ein kleiner Schluck Luft"}),
+      P("out",5,{cue:"Ganz ausatmen, bis nichts mehr da ist"})])}
   ]
  },
  {
-  id:"x13", num:13, name:"Power-Atemzüge", cat:"Kraft & Kapazität",
-  focus:["kap"], intensity:3, bpm:72,
-  desc:"Schnelle, volle Atemzüge im Takt. Du trainierst den Atemapparat auf Tempo und Ausdauer.",
-  hint:"Optional: Arme beim Einatmen weit nach außen öffnen und beim Ausatmen locker fallen lassen. Das hilft, den Brustkorb zu weiten.",
-  note:"Kräftige Atemzüge: Wenn dir schwindlig wird, mache eine Pause und atme normal weiter.",
+  id:"x13", num:13, name:"Power-Atemzüge", cat:"Kraft & Flexibilität",
+  focus:["kap"], intensity:3, bpm:72, tempoNote:"Buch: Viertel = 60–88",
+  desc:"1 Count ein, 1 Count aus, ganz voll und ganz leer. Beginne mit den Handflächen zusammen vor dem Körper. Beim Einatmen gehen die Arme zur Seite auf, beim Ausatmen pressen sich die Hände kräftig zusammen. Das Buch beginnt mit 4 Wiederholungen und steigert mit der Zeit auf 10.",
+  hint:"Mund wie bei „Oh“. Ein Workout für Atemmuskeln: Wiederholungen langsam steigern.",
   levels:[
-   {desc:"4 Power-Atemzüge (Ein 1, Aus 1)",  build:()=>pairSeq(rep([[1,1]],4),"Voll und schnell einatmen")},
-   {desc:"7 Power-Atemzüge",                 build:()=>pairSeq(rep([[1,1]],7),"Voll und schnell einatmen")},
-   {desc:"10 Power-Atemzüge",                build:()=>pairSeq(rep([[1,1]],10),"Voll und schnell einatmen")},
-   {tag:"13a", desc:"6 Atemzüge: Ein 1, Aus 2",  build:()=>pairSeq(rep([[1,2]],6),"Schnell ein, ein bisschen länger aus")}
+   {tag:"4×", desc:"4 Atemzüge: Ein 1, Aus 1", build:()=>p13(4,1)},
+   {tag:"7×", desc:"7 Atemzüge: Ein 1, Aus 1", build:()=>p13(7,1)},
+   {tag:"10×", desc:"10 Atemzüge: Ein 1, Aus 1", build:()=>p13(10,1)},
+   {tag:"13a", desc:"Variation 13a: Ein 1, Aus 2, längeres Zusammenpressen von Händen und Bauch (6 Atemzüge)", build:()=>p13(6,2)}
   ]
  },
  {
-  id:"x18", num:18, name:"6-6-6 · Ruhe-Atmung", cat:"Fokus",
-  focus:["ruhe"], intensity:2, bpm:60,
-  desc:"Gleichmäßig ein, Luft halten, gleichmäßig aus. Eine ruhige Übung zum Ankommen, vor dem Üben, vor einem Auftritt oder zwischendurch.",
-  hint:"Alles weich und ohne Anstrengung. Beim Halten bleibt der Körper entspannt, die Augen dürfen zu.",
+  id:"x18", num:18, name:"6-6-6", cat:"Atmen fürs Gehirn",
+  focus:["ruhe"], intensity:2, bpm:60, tempoNote:"Buch: Viertel = 60",
+  desc:"6 Counts ein, 6 Counts offen halten, 6 Counts aus. Eine Übung, die den Kopf weckt und für Fokus und Ruhe sorgt, auch vor einem Auftritt oder wenn du müde bist. Die Varianten verlängern Zahlen und Halten.",
+  hint:"Mund wie bei „Oh“ beim Einatmen. Das Halten ist offen (die Luft „schwebt“), nicht wie unter Wasser. Am besten wirkt es, wenn die Ausatmung die ganze Zeit glatt und gleichmäßig ist.",
   levels:[
-   {desc:"Ein 6, Halten 6, Aus 6. Zweimal",              build:()=>rounds(2,()=>tri(6,6,6),4)},
-   {desc:"6-6-6, dann 8-8-8, dann 10-10-10",             build:()=>rounds(3,i=>{const n=[6,8,10][i]; return tri(n,n,n);},4)},
-   {desc:"6-6-6, 8-8-8, 10-10-10 und 15-15-15",          build:()=>rounds(4,i=>{const n=[6,8,10,15][i]; return tri(n,n,n);},4)},
-   {tag:"18b", desc:"Halten doppelt so lang: 6-12-6, 8-16-8, 10-20-10", build:()=>rounds(3,i=>{const n=[6,8,10][i]; return tri(n,2*n,n);},4)},
-   {tag:"18c", desc:"Halten viermal so lang: 6-24-6, 8-32-8",         build:()=>rounds(2,i=>{const n=[6,8][i]; return tri(n,4*n,n);},4)}
+   {tag:"18", desc:"Ein 6, Schweben 6, Aus 6 (3 Runden)", build:()=>rounds(3,()=>t18(6,6,6))},
+   {tag:"18a", desc:"1:1:1 mit 6-6-6, 8-8-8, 10-10-10, 15-15-15", build:()=>t18set([6,8,10,15],1)},
+   {tag:"18b", desc:"1:2:1 mit 6-12-6, 8-16-8, 10-20-10, 15-30-15", build:()=>t18set([6,8,10,15],2)},
+   {tag:"18c", desc:"1:4:1 mit 6-24-6, 8-32-8, 10-40-10, 15-60-15", build:()=>t18set([6,8,10,15],4)},
+   {tag:"18d", bpm:144, desc:"Energizing Breath: 4 durch die Nase ein, 7 schweben, 8 durch den Mund aus (Tempo 144, Zunge wie beim „L“)", build:()=>rounds(4,()=>[
+      P("in",4,{cue:"Durch die Nase einatmen"}),
+      P("hold",7,{label:"Offen schweben",cue:"Zunge liegt wie beim Sprechen von „L“ am Gaumen"}),
+      P("out",8,{cue:"Durch den Mund ausatmen, es soll leicht rauschen"})])}
   ]
  }
 ];
-function r5(a,h,o,s,cue){
+function a2(arr){
+  return arr.map((n,i)=>[
+    P("in",n,{tag:"Runde "+(i+1)+" von "+arr.length+" · "+n+" Counts",cue:"Arme seitlich nach oben, wenn du voll bist über dem Kopf"}),
+    P("out",n,{tag:"Runde "+(i+1)+" von "+arr.length+" · "+n+" Counts",cue:"Arme seitlich nach unten, am Ende hängen sie locker"})
+  ]).reduce((x,y)=>x.concat(y),[]);
+}
+function r5(a,h,o,s,i){
+  const w=["tief","tiefer","am tiefsten"][i];
+  const tag="Runde "+(i+1)+" von 3 · "+w;
   return [
-    P("in",a,{cue}),
-    P("hold",h,{cue:"Luft halten, Schultern locker"}),
-    P("out",o,{to:0.5,cue:"Kräftig ausatmen"}),
-    P("hold",s,{cue:"Stopp!"}),
-    P("out",o,{from:0.5,to:0,cue:"Rest ausatmen"})
+    P("in",a,{tag,cue:"Atme "+w+" ein"}),
+    P("hold",h,{tag,label:"Offen schweben",cue:"Mund und Luftweg bleiben offen"}),
+    P("out",o,{tag,to:0.5,cue:"Kräftig die Hälfte ausblasen"}),
+    P("hold",s,{tag,label:"Stopp",cue:"1 Count Stopp"}),
+    P("out",o,{tag,from:0.5,to:0,cue:"Den Rest mit festem Bauch ausdrücken"})
   ];
 }
-function b9(){return each([[4,4],[3,3],[2,2]],2).concat(rep([[1,1]],4));}
-function r12(n,h){
-  return [
-    P("in",n,{cue:"Ruhig und tief einatmen"}),
-    P("hold",h,{sips:Math.max(1,Math.round(h/4)),cue:"Halten und in kleinen Schlucken nachatmen"}),
-    P("out",n,{cue:"Langsam ausatmen"})
-  ];
+function tailPairs(inN,outN,sec,bpm,cpp){
+  const n=repsFor(sec,bpm,cpp), out=[];
+  for(let i=0;i<n;i++){
+    const tag=inN+" ein / "+outN+" aus · Wiederholung "+(i+1)+" von "+n;
+    out.push(P("in",inN,{tag}),P("out",outN,{tag}));
+  }
+  return out;
 }
-function tri(a,h,o){
-  return [P("in",a,{cue:"Gleichmäßig einatmen"}),P("hold",h,{cue:"Halten, ganz locker"}),P("out",o,{cue:"Gleichmäßig ausatmen"})];
+function s7(b,sec){return pairSeq(each([[4,4],[3,4],[2,4],[1,4]],2)).concat(tailPairs(1,4,sec,b,5));}
+function s8(b,sec){return pairSeq(each([[4,4],[4,3],[4,2],[4,1]],2)).concat(tailPairs(4,1,sec,b,5));}
+function s9(b,sec){return pairSeq(each([[4,4],[3,3],[2,2]],2)).concat(tailPairs(1,1,sec,b,2));}
+function s9a(){
+  const seq=[[4,4],[4,4],[3,3],[3,3],[2,2],[2,2],[1,1],[1,1],[1,1],[1,1]]
+    .concat(rep([[0.5,0.5]],8),rep([[1,1]],4),rep([[0.25,0.25]],8),[[1,1],[2,2]]);
+  return pairSeq(seq).concat([
+    P("rest",20,{label:"Ruhig atmen",cue:"Ruhig durch die Nase atmen",tag:"Erholung"}),
+    P("in",2,{cue:"Jetzt laut seufzen",tag:"Seufzer"}),
+    P("out",4,{cue:"Laut seufzen, Luft einfach rauslassen",tag:"Seufzer"})
+  ]);
+}
+function p13(n,outN){
+  return pairSeq(rep([[1,outN]],n),"Ganz voll ein, Arme auf, dann Hände fest zusammen");
+}
+function t18(a,h,o){
+  return [P("in",a,{cue:"Gleichmäßig einatmen"}),P("hold",h,{label:"Offen halten",cue:"Offen schweben, nicht wie unter Wasser"}),P("out",o,{cue:"Glatt und gleichmäßig ausatmen"})];
+}
+function t18set(ns,k){
+  return ns.map(n=>t18(n,n*k,n).map(p=>Object.assign(p,{tag:n+"-"+n*k+"-"+n}))).reduce((x,y)=>x.concat(y),[]);
 }
 
 /* ===== Zeitleiste (in Counts) ===== */
-function makeSession(ex,li){
-  return [P("prep",4,{label:"Einzählen",cue:"Gleich geht es los"})].concat(ex.levels[li].build());
+function makeSession(ex,li,bpm){
+  return [P("prep",4,{label:"Einzählen",cue:"Gleich geht es los"})].concat(ex.levels[li].build(bpm||72));
 }
 function buildTimeline(phases){
   let c=0, lvl=0; const tl=[];
@@ -450,7 +457,7 @@ const KEY="atemgym.v1";
 let DB={ex:{},click:true};
 function load(){try{const r=localStorage.getItem(KEY); if(r){const o=JSON.parse(r); if(o&&o.ex) DB=o;}}catch(e){}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
-function rec(id){ if(!DB.ex[id]) DB.ex[id]={level:0,done:[],bpm:null}; return DB.ex[id]; }
+function rec(id){ if(!DB.ex[id]) DB.ex[id]={level:0,count:0,last:null,bpm:null}; return DB.ex[id]; }
 
 const S={focus:"all",ex:null,lvl:0,bpm:72,click:true,status:"idle",tl:[],total:0,idx:0,shown:-1,
   startTs:0,base:0,raf:0,nextK:0,accents:new Set(),totalBeats:0,warnOK:false,lastCnt:"",lastRem:"",lastPct:-1};
@@ -478,16 +485,22 @@ function renderList(){
     const r=rec(e.id);
     const b=document.createElement("button"); b.type="button"; b.className="ex";
     const tags=e.focus.map(f=>'<span class="tag">'+FOCI.find(x=>x.id===f).name+'</span>').join("");
-    const dots=e.levels.map((_,i)=>r.done.includes(i)?"●":"○").join("");
+    const stat=statText(r);
     b.innerHTML=
-      '<div class="exTop"><span class="pill">'+e.cat+'</span><span>Intensität '+"●".repeat(e.intensity)+"○".repeat(3-e.intensity)+'</span>'+(e.warning?'<span class="warnmark">Hinweis beachten</span>':'')+'</div>'+
+      '<div class="exTop"><span class="pill">'+e.cat+'</span><span>Intensität '+"●".repeat(e.intensity)+"○".repeat(3-e.intensity)+'</span>'+'</div>'+
       '<div class="exName">'+e.name+'</div><div class="exDesc">'+e.desc+'</div>'+
-      '<div class="exFoot"><div class="tags">'+tags+'</div><div class="dots" title="Stufen, die sitzen">'+dots+'</div></div>';
+      '<div class="exFoot"><div class="tags">'+tags+'</div><div class="dots">'+stat+'</div></div>';
     b.addEventListener("click",()=>openEx(e.id));
     box.appendChild(b);
   });
 }
 
+function statText(r){
+  if(!r.count) return "noch nicht geübt";
+  let t=r.count+"× geübt";
+  if(r.last){ const d=new Date(r.last); if(!isNaN(d)) t+=" · zuletzt "+d.getDate()+"."+(d.getMonth()+1)+"."; }
+  return t;
+}
 /* ---------- Player ---------- */
 function showView(v){ $("viewList").hidden=v!=="list"; $("viewPlay").hidden=v!=="play"; window.scrollTo(0,0); }
 function openEx(id){
@@ -500,44 +513,48 @@ function openEx(id){
   $("pCat").textContent=S.ex.cat+" · inspiriert von Buch-Übung "+S.ex.num;
   $("pTitle").textContent=S.ex.name;
   $("pDesc").textContent=S.ex.desc;
+  $("pStats").textContent=statText(r);
   const wb=$("warnBox");
   if(S.ex.warning){ wb.hidden=false; $("warnText").textContent=S.ex.warning; $("warnCheck").checked=false; }
   else wb.hidden=true;
   const nb=$("noteBox");
   if(S.ex.note){ nb.hidden=false; nb.textContent=S.ex.note; } else nb.hidden=true;
   $("bpm").value=S.bpm;
+  S.bpm=levelBpm(); $("bpm").value=S.bpm;
   renderLevels(); prepare(); updateClickBtn(); resetVisual(); updateMainEnabled();
   showView("play");
 }
 function renderLevels(){
   const box=$("levels"); box.innerHTML="";
-  const r=rec(S.ex.id);
+  box.hidden=S.ex.levels.length<2;
   S.ex.levels.forEach((lv,i)=>{
     const b=document.createElement("button"); b.type="button";
-    b.className="lv"+(i===S.lvl?" on":"")+(r.done.includes(i)?" done":"");
+    b.className="lv"+(i===S.lvl?" on":"");
     b.textContent=lv.tag||String(i+1);
     b.disabled=S.status==="running";
-    b.setAttribute("aria-label","Stufe "+(lv.tag||i+1));
+    b.setAttribute("aria-label","Variante "+(lv.tag||i+1));
     b.addEventListener("click",()=>{ if(S.status==="running")return; stopAll(); selectLevel(i); });
     box.appendChild(b);
   });
 }
+function levelBpm(){ const lv=S.ex.levels[S.lvl]; return lv.bpm||rec(S.ex.id).bpm||S.ex.bpm; }
 function selectLevel(i){
   S.lvl=i; rec(S.ex.id).level=i; save();
+  S.bpm=levelBpm(); $("bpm").value=S.bpm;
   renderLevels(); prepare(); resetVisual();
 }
 function prepare(){
-  const r=buildTimeline(makeSession(S.ex,S.lvl));
+  const r=buildTimeline(makeSession(S.ex,S.lvl,S.bpm));
   S.tl=r.tl; S.total=r.total; S.idx=0; S.shown=-1;
   const bi=beatInfo(S.tl,S.total); S.accents=bi.accents; S.totalBeats=bi.totalBeats;
   const lv=S.ex.levels[S.lvl];
-  $("lvInfo").innerHTML="<b>Stufe "+(lv.tag||S.lvl+1)+":</b> "+lv.desc+(lv.note?"<em>"+lv.note+"</em>":"");
+  $("lvInfo").innerHTML=(S.ex.levels.length>1?"<b>Variante "+(lv.tag||S.lvl+1)+":</b> ":"")+lv.desc;
   updateDur();
 }
 function updateDur(){
   const sec=S.total*60/S.bpm;
   $("bpmVal").textContent=S.bpm+" Counts/Min";
-  $("durInfo").textContent="Dauer etwa "+fmtT(sec)+" (mit 4 Counts Einzählen). Zum Ausprobieren sind 60 bis 76 ein guter Bereich.";
+  $("durInfo").textContent="Dauer etwa "+fmtT(sec)+" (mit 4 Counts Einzählen). "+(S.ex.tempoNote||"");
 }
 function updateClickBtn(){
   const b=$("btnClick"); b.className="tog"+(S.click?" on":""); b.textContent=S.click?"🔔 an":"🔕 aus";
@@ -656,11 +673,9 @@ function finish(){
   $("stage").dataset.type="idle";
   $("word").textContent="Geschafft!"; $("cnt").innerHTML="&nbsp;"; $("tagline").innerHTML="&nbsp;";
   $("cue").textContent="Atme jetzt ruhig und ganz normal weiter."; $("next").innerHTML="&nbsp;";
-  const r=rec(S.ex.id), done=r.done.includes(S.lvl);
-  $("btnDone").textContent=done?"Stufe sitzt ✓ (bereits markiert)":"Stufe sitzt ✓";
-  $("finishText").textContent=S.lvl<S.ex.levels.length-1
-    ?"Fühlte sich diese Stufe mühelos und ruhig an? Dann markiere sie als „sitzt“ und probiere beim nächsten Mal die nächste. Wenn nicht, wiederhole sie einfach."
-    :"Das war die letzte Stufe dieser Übung. Markiere sie, wenn sie sich mühelos anfühlt.";
+  const r=rec(S.ex.id); r.count=(r.count||0)+1; r.last=new Date().toISOString(); save();
+  $("pStats").textContent=statText(r);
+  $("finishText").textContent="Gut gemacht! Atme jetzt ruhig und ganz normal weiter. Wiederholen lohnt sich: Was heute anstrengend ist, wird mit Übung leichter.";
   $("finish").hidden=false; setMain();
 }
 function onMain(){
@@ -681,8 +696,8 @@ function importCode(code){
   if(!o||o.app!=="atem-gym"||!o.ex) throw new Error("Der Code ist nicht lesbar.");
   Object.keys(o.ex).forEach(id=>{
     const a=rec(id), b=o.ex[id]||{};
-    const u=new Set((a.done||[]).concat(Array.isArray(b.done)?b.done:[]));
-    a.done=Array.from(u).sort((x,y)=>x-y);
+    a.count=Math.max(a.count||0,b.count||0);
+    if(b.last&&(!a.last||b.last>a.last)) a.last=b.last;
     a.level=Math.max(a.level||0,b.level||0);
     if(!a.bpm&&b.bpm) a.bpm=b.bpm;
   });
@@ -697,15 +712,10 @@ function init(){
   $("btnMain").addEventListener("click",onMain);
   $("btnStop").addEventListener("click",()=>{ stopAll(); });
   $("btnAgain").addEventListener("click",()=>{ stopAll(); start(); });
-  $("btnDone").addEventListener("click",()=>{
-    const r=rec(S.ex.id);
-    if(!r.done.includes(S.lvl)) r.done.push(S.lvl);
-    if(S.lvl<S.ex.levels.length-1){ S.lvl++; r.level=S.lvl; }
-    save(); stopAll(); renderLevels(); prepare(); resetVisual();
-  });
+  $("btnDone").addEventListener("click",()=>{ stopAll(); renderList(); showView("list"); });
   $("bpm").addEventListener("input",e=>{
     if(S.status==="running"||S.status==="paused") return;
-    S.bpm=+e.target.value; rec(S.ex.id).bpm=S.bpm; save(); updateDur();
+    S.bpm=+e.target.value; rec(S.ex.id).bpm=S.bpm; save(); prepare();
   });
   $("btnClick").addEventListener("click",()=>{
     S.click=!S.click; DB.click=S.click; save(); updateClickBtn();
