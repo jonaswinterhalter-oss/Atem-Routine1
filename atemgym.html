@@ -98,13 +98,33 @@ h1 span{color:var(--brass)}
   position:absolute; left:-9px; top:-9px; right:-9px; bottom:-9px; border-radius:50%;
   border:3px dashed var(--brass); opacity:0;
 }
-.stage[data-type=in]{--pc:var(--gold); --pcglow:var(--goldglow)}
-.stage[data-type=out]{--pc:var(--teal); --pcglow:var(--tealglow)}
+.stage[data-type=in],.rbox[data-type=in]{--pc:var(--gold); --pcglow:var(--goldglow)}
+.stage[data-type=out],.rbox[data-type=out],.stage[data-type=flow],.rbox[data-type=flow]{--pc:var(--teal); --pcglow:var(--tealglow)}
+.stage[data-type=res]{--pc:#D98B3A; --pcglow:rgba(217,139,58,.4)}
+.stage[data-type=res] .holdring{opacity:1; border-style:dotted}
+.stage[data-type=text]{--pc:#E9D6A8; --pcglow:rgba(185,130,46,.3)}
 .stage[data-type=hold]{--pc:var(--gold); --pcglow:var(--goldglow)}
 .stage[data-type=hold] .holdring{opacity:1}
-.stage[data-type=rest]{--pc:var(--rest); --pcglow:var(--restglow)}
+.stage[data-type=rest],.rbox[data-type=rest]{--pc:var(--rest); --pcglow:var(--restglow)}
 .stage[data-type=rest] .orb{animation:glow 3s ease-in-out infinite}
-.stage[data-type=prep]{--pc:#E9D6A8; --pcglow:rgba(185,130,46,.3)}
+.stage[data-type=prep],.rbox[data-type=prep]{--pc:#E9D6A8; --pcglow:rgba(185,130,46,.3)}
+.stage[data-view=text] .orb{display:none}
+.ttext{position:absolute; left:0; right:0; top:50%; transform:translateY(-50%); text-align:center; padding:0 40px}
+.ttext .big{font-size:44px; font-weight:800; font-variant-numeric:tabular-nums}
+.ttext .cap{font-size:13px; color:var(--muted); margin-top:4px; line-height:1.4}
+.stage:not([data-view=text]) .ttext{display:none}
+.rbox{--pc:#D9CFB8; margin-top:4px}
+.strip{position:relative; height:92px; border-radius:14px; background-color:#F3ECDA;
+  background-image:linear-gradient(to right, rgba(42,36,24,.14) 1px, transparent 1px); background-size:25% 100%; overflow:hidden}
+.nt{position:absolute; top:24%; bottom:24%; border-radius:6px; background:var(--pc); opacity:.5}
+.nt.first{top:10%; bottom:10%}
+.nt.on{opacity:1; box-shadow:0 0 12px var(--pcglow)}
+.playhead{position:absolute; top:0; bottom:0; width:3px; margin-left:-1px; background:var(--ink); opacity:.75; left:0}
+.rbar{height:10px; border-radius:6px; background:var(--line); overflow:hidden; margin-top:12px}
+.rfill{height:100%; width:0; background:var(--pc)}
+.rprog{height:6px; border-radius:4px; background:var(--line); overflow:hidden; margin-top:10px}
+.rprog i{display:block; height:100%; width:0; background:var(--brass)}
+.rlabels{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:4px}
 @keyframes glow{0%,100%{box-shadow:0 0 22px 2px var(--pcglow)}50%{box-shadow:0 0 44px 12px var(--pcglow)}}
 
 .readout{text-align:center; margin-top:8px; min-height:118px}
@@ -186,11 +206,18 @@ details textarea{width:100%; min-height:80px; border:1px solid var(--line); bord
     <div class="lvInfo" id="lvInfo"></div>
 
     <div class="card">
-      <div class="stageWrap">
+      <div class="stageWrap" id="stageWrap">
         <div class="stage" id="stage" data-type="idle">
           <div class="ring" id="ring"></div>
           <div class="orb" id="orb"><div class="holdring"></div></div>
+          <div class="ttext" id="ttext"><div class="big" id="tbig">0:00</div><div class="cap" id="tcap"></div></div>
         </div>
+      </div>
+      <div class="rbox" id="rbox" hidden data-type="idle">
+        <div class="strip" id="strip"><div class="playhead" id="playhead"></div></div>
+        <div class="rlabels"><span>Count 1</span><span>2</span><span>3</span><span>4</span></div>
+        <div class="rbar"><div class="rfill" id="rfill"></div></div>
+        <div class="rprog"><i id="rprogfill"></i></div>
       </div>
       <div class="readout">
         <div class="word" id="word">Bereit?</div>
@@ -213,7 +240,7 @@ details textarea{width:100%; min-height:80px; border:1px solid var(--line); bord
         </div>
       </div>
 
-      <div class="opts">
+      <div class="opts" id="opts">
         <div class="opt"><label for="bpm">Tempo</label><input type="range" id="bpm" min="40" max="150" step="2"><span class="val" id="bpmVal"></span></div>
         <div class="opt"><label>Klick</label><button class="tog on" id="btnClick" type="button">🔔 an</button><span class="small" id="clickHint">Ein Klick = ein Count. Der erste Klick jeder Phase ist betont.</span></div>
       </div>
@@ -235,7 +262,7 @@ const FOCI=[
   {id:"ruhe", name:"Ruhe & Fokus"}
 ];
 
-const WORDS={prep:"Einzählen",in:"Einatmen",out:"Ausatmen",hold:"Offen halten",rest:"Pause"};
+const WORDS={prep:"Einzählen",in:"Einatmen",out:"Ausatmen",hold:"Offen halten",rest:"Pause",res:"Gegen Widerstand",flow:"Luft fließt",text:"Folge deinem Atem"};
 const P=(type,counts,o)=>Object.assign({type,counts},o||{});
 
 /* Hilfsbauer */
@@ -412,6 +439,217 @@ function t18set(ns,k){
   return ns.map(n=>t18(n,n*k,n).map(p=>Object.assign(p,{tag:n+"-"+n*k+"-"+n}))).reduce((x,y)=>x.concat(y),[]);
 }
 
+
+/* ===== Etappe 2: weitere Übungen ===== */
+const pulses=n=>{const a=[]; for(let i=0;i<n;i++) a.push({p:i*4/n,d:4/n}); return a;};
+const NAMES6={16:"Sechzehntel",12:"Achtel-Triolen",8:"Achtel",6:"Viertel-Triolen",4:"Viertel",2:"Halbe",1:"Ganze"};
+function o6(ns){
+  const out=[];
+  ns.forEach((n,i)=>{
+    const o={pat:pulses(n),noBeat:true,patKind:"beat",tag:"Zeile "+(i+1)+" von "+ns.length+" · "+NAMES6[n]};
+    out.push(P("in",4,Object.assign({cue:"Einatmen mit „Oh“-Mund, im Rhythmus"},o)),
+             P("out",4,Object.assign({cue:"Ausatmen mit „Oh“-Mund, im Rhythmus"},o)));
+  });
+  return out;
+}
+function q10(a,b){
+  const out=[P("in",4,{tag:"Start",cue:"4 Counts ruhig und voll einatmen"})];
+  for(let i=0;i<4;i++){
+    const tag="Wiederholung "+(i+1)+" von 4";
+    out.push(P("out",a,{tag,cue:"Gleichmäßig ausatmen"}),P("in",b,{tag,cue:"Schnell einatmen, ohne Widerstand"}));
+  }
+  return out;
+}
+const PAT11=[
+ [[0,1],[1,.5],[1.5,.5],[2,1],[3,.5],[3.5,.5]],
+ [[0,.5],[.5,.5],[1,1],[2,.5],[2.5,.5],[3,1]],
+ [[0,.5],[.5,.25],[.75,.25],[1,.5],[1.5,.25],[1.75,.25],[2,.5],[2.5,.25],[2.75,.25],[3,.25],[3.25,.25],[3.5,.25],[3.75,.25]],
+ [[0,.25],[.25,.25],[.5,.5],[1,.25],[1.25,.25],[1.5,.5],[2,.25],[2.25,.25],[2.5,.5],[3,.25],[3.25,.25],[3.5,.25],[3.75,.25]],
+ [[0,1],[1,1/3],[4/3,1/3],[5/3,1/3],[2,1],[3,1/3],[10/3,1/3],[11/3,1/3]],
+ [[0,1/3],[1/3,1/3],[2/3,1/3],[1,1],[2,1/3],[7/3,1/3],[8/3,1/3],[3,1]],
+ [[0,.75],[.75,.25],[1,.75],[1.75,.25],[2,.75],[2.75,.25],[3,.75],[3.75,.25]],
+ [[0,.25],[.25,.75],[1,.25],[1.25,.75],[2,.25],[2.25,.75],[3,.25],[3.25,.75]]
+];
+function f11(idxs){
+  const out=[], R=4;
+  idxs.forEach(pi=>{
+    out.push(P("in",2,{tag:"Muster "+(pi+1)+" · Atem holen",cue:"Kurz und leicht einatmen"}));
+    for(let r=0;r<R;r++){
+      out.push(P("flow",4,{pat:PAT11[pi].map(x=>({p:x[0],d:x[1]})),patKind:"on",from:1-r/R,to:1-(r+1)/R,
+        tag:"Muster "+(pi+1)+" · Takt "+(r+1)+" von "+R,cue:"Jede Note mit der Zunge anstoßen, die Luft fließt weiter"}));
+    }
+  });
+  return out;
+}
+const D3={
+  ff:{n:2,name:"Fortissimo",img:"Bogenschießen",cue:"Schneller, kräftiger Luftstrom"},
+  mf:{n:4,name:"Mezzoforte",img:"Darts werfen",cue:"Mittelstarker Luftstrom"},
+  pp:{n:8,name:"Pianissimo",img:"Papierflieger pusten",cue:"Ganz sanfter, feiner Luftstrom"}
+};
+function d3(keys){
+  const out=[];
+  keys.forEach((k,i)=>{
+    const d=D3[k], tag=(i+1)+" von "+keys.length+" · "+d.name+" ("+d.img+")";
+    out.push(P("in",4,{tag,cue:"Bequem voll einatmen"}),P("out",d.n,{tag,label:"Ausatmen: "+d.name,cue:d.cue}));
+  });
+  return out;
+}
+function t4(seq){
+  return rounds(5,()=>{
+    const tot=seq.reduce((a,x)=>a+x[0],0); let l=0; const out=[];
+    seq.forEach(x=>{ const to=l+.45*x[0]/tot; out.push(P("res",x[0],{from:l,to,label:"Sog gegen die Hand",cue:x[1]})); l=to; });
+    out.push(P("in",1,{from:l,to:1,label:"Pop! Hand weg, tief einatmen",cue:"Offen und ohne Widerstand einatmen"}));
+    out.push(P("out",4,{cue:"Weich und gleichmäßig ausatmen"}));
+    return out;
+  });
+}
+function r14(b,sec){
+  const n=repsFor(sec,b,6), out=[];
+  for(let i=0;i<n;i++){
+    const tag="Wiederholung "+(i+1)+" von "+n;
+    out.push(P("in",1,{tag,to:.8,cue:"Hände vor der Brust nach oben"}),
+      P("in",1,{tag,from:.8,to:.9,label:"Schluck",cue:"Arme höher"}),
+      P("in",1,{tag,from:.9,to:1,label:"Schluck",cue:"Arme über den Kopf"}),
+      P("out",1,{tag,to:.35,cue:"Arme nach unten, bequem ausatmen"}),
+      P("out",1,{tag,from:.35,to:.15,label:"Drücken",cue:"Restluft herausdrücken"}),
+      P("out",1,{tag,from:.15,to:0,label:"Drücken",cue:"Weiter drücken, bis nichts mehr da ist"}));
+  }
+  return out;
+}
+function r15(){
+  return rounds(5,()=>[
+    P("in",1,{to:.8,cue:"Ausholen wie zum Wurf"}),
+    P("in",1,{from:.8,to:.9,label:"Schluck",cue:"Noch ein bisschen Luft"}),
+    P("in",1,{from:.9,to:1,label:"Schluck",cue:"Ganz voll"}),
+    P("out",1,{to:.4,label:"Wurf",cue:"Ball werfen: Bauch fest zusammenziehen"}),
+    P("out",2,{from:.4,to:0,label:"Zischen bis leer",cue:"Zzzzz, Hand bleibt gestreckt, bis nichts mehr da ist"})]);
+}
+function r16(){
+  return rounds(5,()=>[
+    P("in",1,{cue:"Ganz voll in einem Zug, Bogen spannen"}),
+    P("out",1,{to:.4,label:"Pfeil abschießen",cue:"Bogenarm nach vorn, Bauch fest"}),
+    P("out",2,{from:.4,to:0,label:"Zischen bis leer",cue:"Zzzzz, Arm bleibt gestreckt, bis nichts mehr da ist"})]);
+}
+const EX2=[
+ {
+  id:"x1", num:1, name:"Spannung lösen", cat:"Start-up",
+  focus:["ruhe"], intensity:1, bpm:60, tempoNote:"Im Buch ohne Tempoangabe",
+  desc:"Ein guter Start: tief einatmen und laut seufzen. In der Variante spannst du nach dem Einatmen Fäuste, Arme und Schultern an und lässt dann Luft und Spannung auf einmal heraus.",
+  hint:"Auf eine lockere Haltung achten: Schultern fallen lassen, Brustbein leicht anheben.",
+  levels:[
+   {tag:"Seufzen", desc:"3 Mal tief einatmen und laut seufzen", build:()=>rounds(3,()=>[P("in",3,{cue:"Gut einatmen"}),P("out",4,{cue:"Laut seufzen, Spannung rauslassen"})])},
+   {tag:"1a", desc:"Variation 1a: tief einatmen, anspannen, dann Spannung und Luft explodieren lassen (3 Runden)", build:()=>rounds(3,()=>[P("in",4,{cue:"Tief einatmen"}),P("hold",3,{label:"Anspannen",cue:"Fäuste, Arme und Schultern fest anspannen"}),P("out",1,{cue:"Alles auf einmal herauslassen: Luft und Spannung"})])}
+  ]
+ },
+ {
+  id:"x3", num:3, name:"Flow-Bewusstsein: Dynamik spüren", cat:"Flow Study",
+  focus:["kon"], intensity:1, bpm:60, tempoNote:"Im Buch ohne Tempoangabe",
+  desc:"Atme bequem voll ein und lass die Luft dann so strömen, wie du sie bei verschiedenen Lautstärken brauchst: kräftig wie beim Bogenschießen (Fortissimo), mittel wie beim Dartwerfen (Mezzoforte) und ganz sanft wie beim Papierflieger-Pusten (Pianissimo).",
+  hint:"Mund wie bei „Oh“ oder „Whoa“. Spüre, wie sich der Luftstrom je nach Lautstärke anfühlt.",
+  levels:[
+   {tag:"Alle drei", desc:"Fortissimo, Mezzoforte, Pianissimo, dann noch einmal", build:()=>d3(["ff","mf","pp","ff","mf","pp"])},
+   {tag:"Fortissimo", desc:"Bogenschießen: 4 kräftige Atemzüge", build:()=>d3(["ff","ff","ff","ff"])},
+   {tag:"Mezzoforte", desc:"Darts werfen: 4 mittelstarke Atemzüge", build:()=>d3(["mf","mf","mf","mf"])},
+   {tag:"Pianissimo", desc:"Papierflieger pusten: 4 sanfte Atemzüge", build:()=>d3(["pp","pp","pp","pp"])}
+  ]
+ },
+ {
+  id:"x4", num:4, name:"Einatem-Therapie", cat:"Therapie",
+  focus:["ein"], intensity:2, bpm:60, tempoNote:"Im Buch ohne Tempoangabe (hier 1 Count = 1 Sekunde)",
+  desc:"Du hältst den Handrücken vor den Mund und atmest gegen den Widerstand ein, als würdest du um Luft kämpfen. Dann nimmst du die Hand schnell weg („Pop“) und atmest tief und frei ein. Danach weich ausatmen. 4 bis 6 Wiederholungen (hier 5). Das trainiert die Bauchmuskeln und hilft, wenn die Flow Studies schwerfallen.",
+  hint:"Im Hals und Bauch darf Anspannung zu spüren sein. Konzentriere dich auf die offene, widerstandsfreie Einatmung direkt nach dem Wegnehmen der Hand.",
+  levels:[
+   {tag:"4", desc:"Gegen die Hand einatmen (4 Counts), Pop, ausatmen. 5 Wiederholungen", build:()=>t4([[4,"Handrücken vor den Mund, dagegen einatmen"]])},
+   {tag:"4a", desc:"Variation 4a: Während des Sogs 2 Counts den Bauch unten vorne weiten, dann 2 Counts den unteren Rücken", build:()=>t4([[2,"Unteren Bauch vorne weiten"],[2,"Unteren Rücken weiten"]])},
+   {tag:"4b", desc:"Variation 4b: 4 Bereiche zu je 2 Counts weiten (unten vorne, unten hinten, oben vorne, oben hinten)", build:()=>t4([[2,"Unteren Bauch vorne weiten"],[2,"Unteren Rücken weiten"],[2,"Oberen Bauch vorne weiten"],[2,"Oberen Rücken weiten"]])},
+   {tag:"4c", desc:"Variation 4c: Hand bleibt vor dem Mund, aber ein kleines Leck lässt etwas Luft durch. In 3 Sekunden unter Druck bis voll einatmen", build:()=>rounds(5,()=>[
+      P("res",3,{from:0,to:1,label:"Einatmen mit kleinem Leck",cue:"Hand bleibt vor dem Mund, nur wenig Luft strömt durch"}),
+      P("out",4,{cue:"Weich und gleichmäßig ausatmen"})])}
+  ]
+ },
+ {
+  id:"x6", num:6, name:"Mundform-Therapie", cat:"Therapie", view:"rhythm",
+  focus:["aus"], intensity:1, bpm:60, tempoNote:"Buch: Viertel = 60",
+  desc:"Du atmest mit „Oh“-Mund im Rhythmus ein und aus, erst in Achteln, dann in Viertel-Triolen, Vierteln, Halben und Ganzen. Die ganze Folge läuft ohne Pause von oben nach unten. Das fördert Platz und frei fließende Luft im Mund- und Rachenraum.",
+  hint:"Mund wie bei „Oh“. Jede Note ist ein sanfter Impuls, die Luft fließt immer weiter.",
+  levels:[
+   {tag:"6", desc:"Von oben nach unten: Achtel, Viertel-Triolen, Viertel, Halbe, Ganze", build:()=>o6([8,6,4,2,1])},
+   {tag:"6a", desc:"Variation 6a: zuerst eine Zeile Sechzehntel und eine Zeile Achtel-Triolen, dann wie 6", build:()=>o6([16,12,8,6,4,2,1])},
+   {tag:"6b", desc:"Variation 6b: von unten nach oben (Ganze bis Achtel)", build:()=>o6([1,2,4,6,8])}
+  ]
+ },
+ {
+  id:"x10", num:10, name:"Schnell-Atmen (Quick Breath)", cat:"Flow Study",
+  focus:["tempo"], intensity:2, bpm:72, tempoNote:"Buch: Viertel = 60–104 (langsam) bzw. 104–172 (schnell)",
+  desc:"Jede Zeile beginnt mit einer Einatmung über 4 Counts. Danach atmest du lang aus und holst mit einem immer kürzeren, schnellen Atemzug Luft: 3+1, 3½+½, 3¾+¼ (bei schnellen Tempi 7+1, 7½+½, 7¾+¼). Jede Zeile wird 4 Mal wiederholt. Das übt eine leise, mühelose Einatmung für Stellen, an denen kaum Platz zum Atmen ist.",
+  hint:"Schnell, effizient und ohne Reibung einatmen, danach wieder glatte Luftwände beim Ausatmen.",
+  levels:[
+   {tag:"3+1", bpm:72, desc:"Langsame bis mittlere Tempi: aus 3 Counts, ein 1 Count", build:()=>q10(3,1)},
+   {tag:"3½+½", bpm:72, desc:"Langsame bis mittlere Tempi: aus 3½ Counts, ein ½ Count", build:()=>q10(3.5,.5)},
+   {tag:"3¾+¼", bpm:72, desc:"Langsame bis mittlere Tempi: aus 3¾ Counts, ein ¼ Count", build:()=>q10(3.75,.25)},
+   {tag:"7+1", bpm:120, desc:"Schnelle Tempi: aus 7 Counts, ein 1 Count", build:()=>q10(7,1)},
+   {tag:"7½+½", bpm:120, desc:"Schnelle Tempi: aus 7½ Counts, ein ½ Count", build:()=>q10(7.5,.5)},
+   {tag:"7¾+¼", bpm:120, desc:"Schnelle Tempi: aus 7¾ Counts, ein ¼ Count", build:()=>q10(7.75,.25)}
+  ]
+ },
+ {
+  id:"x11", num:11, name:"Flow-Check-Muster", cat:"Flow Study", view:"rhythm",
+  focus:["tempo","art"], intensity:1, bpm:72, tempoNote:"Buch: Viertel = 60–144",
+  desc:"Halte die Handfläche vor dein Gesicht und spüre den Luftstrom, während du die Rhythmen artikulierst. Jede Note wird mit der Zunge angestoßen, die Luft fließt dabei ohne Unterbrechung. Pro Muster gibt es einen Atem für 4 Takte.",
+  hint:"Instrumentalist:innen stoßen jede Note mit der Zunge an („tu“) und halten die Luft in Bewegung. Sänger:innen atmen still einen gleichmäßigen Luftstrom über den Vokal „u“, jede Note beginnt mit „t“. Tipp: Handfläche weiter weg halten, bis auf Ellenbogenlänge. Probiere die Muster auch auf bekannte Melodien oder Stellen aus deinem Stück.",
+  levels:[
+   {tag:"1", desc:"Muster 1", build:()=>f11([0,0])},
+   {tag:"2", desc:"Muster 2", build:()=>f11([1,1])},
+   {tag:"3", desc:"Muster 3", build:()=>f11([2,2])},
+   {tag:"4", desc:"Muster 4", build:()=>f11([3,3])},
+   {tag:"5", desc:"Muster 5 (Triolen)", build:()=>f11([4,4])},
+   {tag:"6", desc:"Muster 6 (Triolen)", build:()=>f11([5,5])},
+   {tag:"7", desc:"Muster 7 (punktiert)", build:()=>f11([6,6])},
+   {tag:"8", desc:"Muster 8 (punktiert)", build:()=>f11([7,7])},
+   {tag:"Alle", desc:"Alle 8 Muster nacheinander, je ein Atem", build:()=>f11([0,1,2,3,4,5,6,7])}
+  ]
+ },
+ {
+  id:"x14", num:14, name:"Ein, Schluck, Schluck – Aus, Drücken, Drücken", cat:"Kraft & Flexibilität",
+  focus:["kap"], intensity:3, bpm:110, tempoNote:"Buch: Achtel = 110 (wie ein langsamer 6/8-Takt)",
+  desc:"Du atmest in 1 Count fast voll ein und füllst mit 2 kleinen Schlucken ganz auf. Dann atmest du in 1 Count bequem leer und drückst in 2 Counts alle Restluft heraus. Das Muster wird etwa 20 Sekunden wiederholt. Es dehnt und stärkt die Muskeln rund um die Lunge, sodass sie später wie ein Blasebalg arbeiten.",
+  hint:"Mund wie bei „Oh“ beim Einatmen. Die Luft ist immer in Bewegung, nie anhalten. Das ist ein Workout.",
+  levels:[
+   {tag:"20 s", desc:"Muster für etwa 20 Sekunden", build:b=>r14(b,20)},
+   {tag:"40 s", desc:"Muster für etwa 40 Sekunden", build:b=>r14(b,40)}
+  ]
+ },
+ {
+  id:"x15", num:15, name:"Den Ball werfen", cat:"Kraft & Flexibilität",
+  focus:["kap"], intensity:3, bpm:60, tempoNote:"Im Buch ohne Tempoangabe",
+  desc:"Du atmest in 1 Count voll ein und füllst mit 2 Schlucken auf. Dann atmest du in einer einzigen Bewegung ganz aus, mit fest zusammengezogenem Bauch, als würdest du ausholen und einen Ball werfen. Der Arm bleibt gestreckt, bis du leer bist. Am Ende steht ein Zischen, damit du sicher ganz leer bist.",
+  hint:"Mund wie bei „Oh“ beim Einatmen. Das ist ein Workout.",
+  levels:[
+   {tag:"5×", desc:"5 Wiederholungen", build:()=>r15()}
+  ]
+ },
+ {
+  id:"x16", num:16, name:"Power-Bogenschießen", cat:"Kraft & Flexibilität",
+  focus:["kap"], intensity:3, bpm:60, tempoNote:"Im Buch ohne Tempoangabe",
+  desc:"Du atmest in 1 Count so voll wie möglich ein (Dehnung) und in einer Bewegung ganz aus (Kompression), als würdest du einen Pfeil abschießen. Der Bogenarm bleibt beim Ausatmen gestreckt. Am Ende steht ein Zischen, damit du sicher ganz leer bist.",
+  hint:"Dehnung und Kompression sollen weich und bewusst sein. Mund wie bei „Oh“ beim Einatmen.",
+  levels:[
+   {tag:"5×", desc:"5 Wiederholungen", build:()=>r16()}
+  ]
+ },
+ {
+  id:"x17", num:17, name:"Folge deinem Atem", cat:"Atmen fürs Gehirn", view:"text", silent:true, fixedBpm:true,
+  focus:["ruhe"], intensity:1, bpm:60, tempoNote:"Ohne Tempo und ohne Klick",
+  desc:"Setz dich ruhig hin und atme durch den Mund aus und durch die Nase ein, in normalem, entspanntem Tempo. Beobachte einfach deinen Atem, ohne Tempo oder Tiefe zu lenken. Denke an die Ausatmung als ersten Teil des Atemzugs und an die Einatmung als zweiten. Das klärt den Kopf und bringt Ruhe und Fokus.",
+  hint:"Die Ausatmung kommt zuerst. Wenn du sie bewusst vollständiger werden lässt, nutzt du später mehr von deiner Lungenkapazität.",
+  levels:[2,3,5].map(m=>({tag:m+" Min.", desc:m+" Minuten ruhig dem Atem folgen", build:()=>[
+    P("text",m*60,{label:"Folge deinem Atem",cue:"Mund aus, Nase ein. Im eigenen Tempo, nichts lenken.",noBeat:true})
+  ]}))
+ }
+];
+EX2.forEach(e=>EXS.push(e));
+EXS.sort((a,b)=>a.num-b.num);
+
 /* ===== Zeitleiste (in Counts) ===== */
 function makeSession(ex,li,bpm){
   return [P("prep",4,{label:"Einzählen",cue:"Gleich geht es los"})].concat(ex.levels[li].build(bpm||72));
@@ -424,6 +662,8 @@ function buildTimeline(phases){
     if(q.type==="in"){ if(q.from==null)q.from=0; if(q.to==null)q.to=1; }
     else if(q.type==="out"){ if(q.from==null)q.from=1; if(q.to==null)q.to=0; }
     else if(q.type==="hold"){ q.from=q.to=(q.from==null?lvl:q.from); }
+    else if(q.type==="res"){ if(q.from==null)q.from=0; if(q.to==null)q.to=0.5; }
+    else if(q.type==="flow"){ if(q.from==null)q.from=1; if(q.to==null)q.to=0; }
     else { q.from=q.to=0; }
     lvl=q.to; tl.push(q);
   });
@@ -440,12 +680,26 @@ function levelAt(p,c){
   }
   return v;
 }
-function beatInfo(tl,total){
-  const accents=new Set();
-  tl.forEach(p=>{ if(Math.abs(p.c0-Math.round(p.c0))<1e-9) accents.add(Math.round(p.c0)); });
-  return {accents,totalBeats:Math.ceil(total-1e-9)};
+function beatInfo(tl,total,silent){
+  if(silent) return {events:[]};
+  const ev=[], acc=new Set();
+  tl.forEach(p=>{ if(Math.abs(p.c0-Math.round(p.c0))<1e-9) acc.add(Math.round(p.c0)); });
+  const K=Math.ceil(total-1e-9);
+  for(let k=0;k<K;k++){
+    const ph=tl.find(p=>k>=p.c0-1e-9&&k<p.c1-1e-9);
+    if(ph&&ph.noBeat) continue;
+    ev.push({t:k,k:acc.has(k)?"acc":"beat"});
+  }
+  tl.forEach(p=>{ if(p.pat) p.pat.forEach((x,i)=>ev.push({t:p.c0+x.p,k:i===0?"acc":(p.patKind||"on")})); });
+  ev.sort((a,b)=>a.t-b.t);
+  return {events:ev};
 }
-function fmtC(n){return n===0.5?"½":n===0.25?"¼":String(n);}
+function fmtC(n){
+  const w=Math.floor(n+1e-9), f=Math.round((n-w)*100)/100, m={0.25:"¼",0.5:"½",0.75:"¾"};
+  if(f===0) return String(w);
+  if(m[f]) return (w?String(w):"")+m[f];
+  return String(Math.round(n*100)/100);
+}
 function fmtT(s){s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");}
 </script>
 
@@ -460,7 +714,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
 function rec(id){ if(!DB.ex[id]) DB.ex[id]={level:0,count:0,last:null,bpm:null}; return DB.ex[id]; }
 
 const S={focus:"all",ex:null,lvl:0,bpm:72,click:true,status:"idle",tl:[],total:0,idx:0,shown:-1,
-  startTs:0,base:0,raf:0,nextK:0,accents:new Set(),totalBeats:0,warnOK:false,lastCnt:"",lastRem:"",lastPct:-1};
+  startTs:0,base:0,raf:0,nextK:0,events:[],view:"circle",strip:null,stripIdx:-1,warnOK:false,lastCnt:"",lastRem:"",lastPct:-1};
 let actx=null, mTimer=null, wake=null;
 
 /* ---------- Übersicht ---------- */
@@ -519,7 +773,10 @@ function openEx(id){
   else wb.hidden=true;
   const nb=$("noteBox");
   if(S.ex.note){ nb.hidden=false; nb.textContent=S.ex.note; } else nb.hidden=true;
-  $("bpm").value=S.bpm;
+  S.view=S.ex.view||"circle";
+  $("stageWrap").hidden=S.view==="rhythm"; $("rbox").hidden=S.view!=="rhythm";
+  $("stage").dataset.view=S.view;
+  $("opts").hidden=!!S.ex.fixedBpm;
   S.bpm=levelBpm(); $("bpm").value=S.bpm;
   renderLevels(); prepare(); updateClickBtn(); resetVisual(); updateMainEnabled();
   showView("play");
@@ -546,7 +803,7 @@ function selectLevel(i){
 function prepare(){
   const r=buildTimeline(makeSession(S.ex,S.lvl,S.bpm));
   S.tl=r.tl; S.total=r.total; S.idx=0; S.shown=-1;
-  const bi=beatInfo(S.tl,S.total); S.accents=bi.accents; S.totalBeats=bi.totalBeats;
+  S.events=beatInfo(S.tl,S.total,S.ex.silent).events;
   const lv=S.ex.levels[S.lvl];
   $("lvInfo").innerHTML=(S.ex.levels.length>1?"<b>Variante "+(lv.tag||S.lvl+1)+":</b> ":"")+lv.desc;
   updateDur();
@@ -572,21 +829,54 @@ function setMain(){
 }
 
 /* ---------- Visual ---------- */
-function setLevel(v){ $("orb").style.transform="scale("+(0.42+0.88*v).toFixed(4)+")"; }
-function setRing(p){ const q=Math.round(p*10)/10; if(q!==S.lastPct){S.lastPct=q; $("ring").style.setProperty("--p",q);} }
+function setLevel(v){
+  if(S.view==="rhythm"){ $("rfill").style.width=Math.max(0,Math.min(100,v*100)).toFixed(1)+"%"; }
+  else $("orb").style.transform="scale("+(0.42+0.88*v).toFixed(4)+")";
+}
+function setRing(p){
+  const q=Math.round(p*10)/10; if(q===S.lastPct) return; S.lastPct=q;
+  $("ring").style.setProperty("--p",q); $("rprogfill").style.width=q+"%";
+}
+function renderStrip(p){
+  const st=$("strip"); st.querySelectorAll(".nt").forEach(n=>n.remove());
+  const ph=$("playhead");
+  (p.pat||[]).forEach((x,i)=>{
+    const d=document.createElement("div"); d.className="nt"+(i===0?" first":"");
+    d.style.left=(x.p/p.counts*100)+"%"; d.style.width="calc("+(x.d/p.counts*100)+"% - 3px)";
+    st.insertBefore(d,ph);
+  });
+  S.strip=p; S.stripIdx=-1;
+}
+function updateStrip(p,c){
+  const u=Math.max(0,Math.min(1,(c-p.c0)/p.counts));
+  $("playhead").style.left=(u*100).toFixed(2)+"%";
+  if(!p.pat) return;
+  const pos=c-p.c0; let idx=-1;
+  for(let i=0;i<p.pat.length;i++){ if(p.pat[i].p<=pos+1e-9) idx=i; }
+  if(idx!==S.stripIdx){
+    const nts=$("strip").querySelectorAll(".nt");
+    nts.forEach((n,i)=>n.classList.toggle("on",i===idx));
+    S.stripIdx=idx;
+  }
+}
 function resetVisual(){
-  $("stage").dataset.type="idle"; setLevel(0); setRing(0);
+  $("stage").dataset.type="idle"; $("rbox").dataset.type="idle"; setLevel(0); S.lastPct=-1; setRing(0);
+  if(S.view==="rhythm"){ renderStrip({pat:null,counts:4}); $("playhead").style.left="0%"; }
+  if(S.view==="text"){ $("tbig").textContent=fmtT(S.total*60/S.bpm-4*60/S.bpm); $("tcap").textContent="Setz dich bequem hin"; }
   $("word").textContent="Bereit?"; $("cnt").innerHTML="&nbsp;"; $("tagline").innerHTML="&nbsp;";
   $("cue").textContent=S.ex?S.ex.hint:""; $("next").innerHTML="&nbsp;";
   $("finish").hidden=true; S.lastCnt=""; S.lastRem="";
 }
 function showPhase(p){
-  $("stage").dataset.type=p.type;
+  $("stage").dataset.type=p.type; $("rbox").dataset.type=p.type;
+  if(S.view==="rhythm") renderStrip(p);
+  if(S.view==="text") $("tcap").textContent=p.type==="prep"?"Setz dich bequem hin":"Atme durch den Mund aus, durch die Nase ein";
   $("word").textContent=p.label||WORDS[p.type];
   $("tagline").textContent=p.tag||" ";
   $("cue").textContent=p.cue||" ";
   const q=S.tl[S.idx+1];
-  $("next").textContent=q?("Danach: "+WORDS[q.type]+" · "+fmtC(q.counts)+(q.counts===1?" Count":" Counts")):"Danach: fertig";
+  $("next").textContent=q?("Danach: "+(q.label||WORDS[q.type])+" · "+fmtC(q.counts)+(q.counts===1?" Count":" Counts")):"Danach: fertig";
+  if(S.view==="text") $("next").textContent=" ";
 }
 
 /* ---------- Ablauf ---------- */
@@ -600,13 +890,15 @@ function tick(){
   const p=S.tl[S.idx];
   if(S.idx!==S.shown){ S.shown=S.idx; showPhase(p); }
   setLevel(levelAt(p,c));
+  if(S.view==="rhythm") updateStrip(p,c);
   let cn="";
   if(p.type==="prep") cn=String(Math.max(1,Math.ceil(p.c1-c-1e-9)));
+  else if(S.view==="text") cn="";
   else if(p.counts>=1) cn="Count "+Math.min(Math.ceil(p.counts),Math.floor(c-p.c0)+1)+" von "+Math.ceil(p.counts);
   else cn="schnell";
   if(cn!==S.lastCnt){ S.lastCnt=cn; $("cnt").textContent=cn||" "; }
   const rem=fmtT((S.total-c)*60/S.bpm);
-  if(rem!==S.lastRem){ S.lastRem=rem; }
+  if(rem!==S.lastRem){ S.lastRem=rem; if(S.view==="text") $("tbig").textContent=rem; }
   setRing(100*c/S.total);
   S.raf=requestAnimationFrame(tick);
 }
@@ -616,24 +908,26 @@ function ensureAudio(){
     if(actx&&actx.state==="suspended") actx.resume();
   }catch(e){}
 }
-function clickAt(when,accent){
+function clickAt(when,kind){
   try{
     const o=actx.createOscillator(), g=actx.createGain();
-    o.type="sine"; o.frequency.value=accent?1320:880;
+    const acc=kind==="acc", on=kind==="on";
+    o.type=on?"triangle":"sine"; o.frequency.value=acc?1320:(on?620:880);
+    const vol=acc?0.55:(on?0.4:0.3);
     g.gain.setValueAtTime(0.0001,when);
-    g.gain.exponentialRampToValueAtTime(accent?0.55:0.35,when+0.003);
+    g.gain.exponentialRampToValueAtTime(vol,when+0.003);
     g.gain.exponentialRampToValueAtTime(0.0001,when+0.07);
     o.connect(g); g.connect(actx.destination); o.start(when); o.stop(when+0.09);
   }catch(e){}
 }
+function evIndexFrom(c){ let i=0; while(i<S.events.length&&S.events[i].t<c-1e-9) i++; return i; }
 function sched(){
   if(!actx||S.status!=="running"||!S.click) return;
   const beat=60/S.bpm;
-  while(S.nextK<S.totalBeats){
-    const el=(now()-S.startTs)/1000;
-    const dt=S.nextK*beat-el;
+  while(S.nextK<S.events.length){
+    const e=S.events[S.nextK], el=(now()-S.startTs)/1000, dt=e.t*beat-el;
     if(dt>0.15) break;
-    if(dt>-0.05) clickAt(actx.currentTime+Math.max(0,dt),S.accents.has(S.nextK));
+    if(dt>-0.05) clickAt(actx.currentTime+Math.max(0,dt),e.k);
     S.nextK++;
   }
 }
@@ -660,7 +954,7 @@ function resume(){
   ensureAudio();
   const beat=60/S.bpm;
   S.startTs=now()-S.base*1000+150;
-  S.nextK=Math.max(0,Math.ceil(Math.max(0,S.base)/beat-1e-9));
+  S.nextK=evIndexFrom(Math.max(0,S.base)/beat);
   S.status="running"; setMain(); startSched(); S.raf=requestAnimationFrame(tick);
 }
 function stopAll(){
@@ -670,7 +964,8 @@ function stopAll(){
 function finish(){
   cancelAnimationFrame(S.raf); stopSched(); unlockWake();
   S.status="done"; setLevel(0); setRing(100);
-  $("stage").dataset.type="idle";
+  $("stage").dataset.type="idle"; $("rbox").dataset.type="idle";
+  if(S.view==="text") $("tbig").textContent="0:00";
   $("word").textContent="Geschafft!"; $("cnt").innerHTML="&nbsp;"; $("tagline").innerHTML="&nbsp;";
   $("cue").textContent="Atme jetzt ruhig und ganz normal weiter."; $("next").innerHTML="&nbsp;";
   const r=rec(S.ex.id); r.count=(r.count||0)+1; r.last=new Date().toISOString(); save();
@@ -719,7 +1014,7 @@ function init(){
   });
   $("btnClick").addEventListener("click",()=>{
     S.click=!S.click; DB.click=S.click; save(); updateClickBtn();
-    if(S.click){ ensureAudio(); if(S.status==="running"){ const beat=60/S.bpm; S.nextK=Math.max(0,Math.ceil((now()-S.startTs)/1000/beat)); } }
+    if(S.click){ ensureAudio(); if(S.status==="running"){ const beat=60/S.bpm; S.nextK=evIndexFrom(Math.max(0,(now()-S.startTs)/1000)/beat); } }
   });
   $("warnCheck").addEventListener("change",e=>{ S.warnOK=e.target.checked; updateMainEnabled(); });
   document.addEventListener("visibilitychange",()=>{ if(document.hidden&&S.status==="running") pause(); });
