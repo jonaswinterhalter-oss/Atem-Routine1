@@ -144,8 +144,8 @@
         </div>
       </div>
       <p class="phaseWord" id="phaseWord">&nbsp;</p>
-      <p class="counter" id="stepCounter">Schritt 1 von 7</p>
-      <p class="name" id="stepName">Aufwecken</p>
+      <p class="counter" id="stepCounter">Schritt 1 von 6</p>
+      <p class="name" id="stepName">Ruhig ankommen</p>
       <p class="instr" id="stepInstr"></p>
       <div class="prepOverlay" id="prepOverlay">
         <div class="prepIcon" id="prepIcon">⏳</div>
@@ -158,7 +158,7 @@
       </div>
     </div>
     <div class="bar-track"><div class="bar-fill" id="stepFill"></div></div>
-    <div class="times"><span id="stepTimeLeft">0:45</span><span id="totalTime">Gesamt 6:01</span></div>
+    <div class="times"><span id="stepTimeLeft">0:40</span><span id="totalTime">Gesamt 5:02</span></div>
     <div class="controls">
       <button id="playBtn">▶ Start</button>
       <button class="secondary" id="skipBtn">⏭ Weiter</button>
@@ -166,18 +166,17 @@
     </div>
   </div>
 
-  <p class="tip">Kreis wird groß = einatmen, wird klein = ausatmen. Bei der letzten Übung: Punkt auf der Linie folgt der Tonhöhe. Bei Schwindel: hinsetzen und ruhig durch die Nase weiteratmen.</p>
+  <p class="tip">Kreis wird groß = einatmen, wird klein = ausatmen. Beim Einatmen weiten sich Bauch, Flanken und Rücken – Schultern und Brust bleiben ruhig. Bei der letzten Übung: Punkt auf der Linie folgt der Tonhöhe. Bei Schwindel: hinsetzen und ruhig durch die Nase weiteratmen.</p>
   <p class="credit">Übungen angelehnt an „The Breathing Gym" von Sam Pilafian und Patrick Sheridan.</p>
 </div>
 
 <script>
 const steps=[
-{name:"Aufwecken",instr:"Finger hinter dem Rücken verschränken. Beim Einatmen Schultern sanft anspannen, beim Ausatmen lösen. Dann leicht nach vorne beugen und weiteratmen.",dur:45,emoji:"🙆",color:"#378add",tint:"#e6f1fb",mode:"idle"},
-{name:"Spannung loslassen",instr:"Tief einatmen, dann beim Ausatmen laut und locker seufzen. Mehrmals wiederholen.",dur:33,emoji:"💨",color:"#1d9e75",tint:"#e1f5ee",mode:"pacer",inhale:5,exhale:6},
-{name:"Ruhiger Luftstrom",instr:"Arme seitlich hoch beim Einatmen, runter beim Ausatmen. Die Luft fließt die ganze Zeit gleichmäßig, nie gepresst.",dur:84,emoji:"↕️",color:"#639922",tint:"#eaf3de",mode:"pacer",inhale:7,exhale:7},
-{name:"Papierflieger pusten",instr:"Kurz und locker einatmen. Dann die Luft ganz sanft rausströmen lassen – Lippen bleiben locker geöffnet, nicht geschlossen.",dur:66,emoji:"✈️",color:"#ef9f27",tint:"#faeeda",mode:"pacer",inhale:4,exhale:7},
-{name:"Ruhig ankommen",instr:"Normal weiteratmen, durch die Nase ein, durch den Mund aus. Einfach dem Atem folgen, ohne zu zählen.",dur:45,emoji:"🌙",color:"#7f77dd",tint:"#eeedfe",mode:"idle"},
-{name:"Bereit für die Trompete",instr:"Mundstück oder Trompete nehmen. Entspannt einatmen und die Luft sanft rausströmen lassen – Lippen bleiben locker, nicht geschlossen.",dur:30,emoji:"🎺",color:"#d4537e",tint:"#fbeaf0",mode:"idle",preRoll:{text:"Mundstück oder Trompete bereit machen, gleich geht es weiter",icon:"⏳",dur:10}},
+{name:"Ruhig ankommen",instr:"Aufrecht sitzen oder stehen. Eine Hand auf den Bauch, eine auf die Brust. Durch die Nase ein und durch die Nase aus – nur die untere Hand bewegt sich, die Brust bleibt ruhig.",dur:40,emoji:"🌙",color:"#7f77dd",tint:"#eeedfe",mode:"pacer",inhale:4,exhale:6,inWord:"Einatmen · Nase",outWord:"Ausatmen · Nase"},
+{name:"Atem in den Rücken",instr:"Leicht nach vorne beugen, Hände auf die Oberschenkel. Durch die Nase einatmen und spüren, wie sich Rücken und Flanken weiten. Dann die Luft sanft durch den Mund ausströmen lassen.",dur:50,emoji:"↔️",color:"#378add",tint:"#e6f1fb",mode:"pacer",inhale:4,exhale:6,inWord:"Einatmen · Nase",outWord:"Ausatmen · Mund"},
+{name:"Ruhiger Luftstrom",instr:"Aufrecht, Hände seitlich an den Rippen. Durch die Nase einatmen, dann die Luft gleichmäßig und ohne Druck ausströmen lassen – wie durch einen Strohhalm. Die Schultern bleiben unten.",dur:60,emoji:"🌊",color:"#639922",tint:"#eaf3de",mode:"pacer",inhale:6,exhale:6,inWord:"Einatmen · Nase",outWord:"Ausatmen · Mund"},
+{name:"Papierflieger pusten",instr:"Durch die Nase einatmen, Bauch und Flanken weiten sich. Dann die Luft ganz sanft rausströmen lassen – Lippen bleiben locker geöffnet, nicht geschlossen.",dur:66,emoji:"✈️",color:"#ef9f27",tint:"#faeeda",mode:"pacer",inhale:4,exhale:7,inWord:"Einatmen · Nase",outWord:"Ausatmen · Mund"},
+{name:"Bereit fürs Mundstück",instr:"Mundstück nehmen. Entspannt einatmen und die Luft sanft rausströmen lassen – Lippen bleiben locker, nicht geschlossen.",dur:30,emoji:"🌬️",color:"#d4537e",tint:"#fbeaf0",mode:"idle",preRoll:{text:"Mundstück bereit machen, gleich geht es weiter",icon:"⏳",dur:10}},
 {name:"Aufwärmen mit dem Mundstück",instr:"Lasse deinen Ton der Linie folgen.",dur:40,emoji:"🎵",color:"#1f9e9c",tint:"#e3f6f5",mode:"wavefollow"}
 ];
 let cur=0,running=false,mainTimer=null,phase="in",phaseStartAt=0,stepStartAt=0,pausedAt=0,inOverlay=false,overlayTimer=null;
@@ -349,7 +348,7 @@ function loadStep(i){
     circle.style.transform="scale(0.4)";
     phaseStartAt=now();
     goPhase(true,s.color,s.inhale);
-    phaseWord.textContent="Einatmen";
+    phaseWord.textContent=s.inWord||"Einatmen";
   } else if(s.mode==="wavefollow"){
     card.classList.add("wavemode");
     generateWaveSession();
@@ -429,8 +428,8 @@ function tick(){
       // current inhale/exhale has fully finished, even if that runs a little long
       if(stepLeft<=0){advanceStep();return;}
       const col=s.color;
-      if(phase==="in"){phase="out";phaseStartAt=now();goPhase(false,col,s.exhale);phaseWord.textContent="Ausatmen";}
-      else{phase="in";phaseStartAt=now();goPhase(true,col,s.inhale);phaseWord.textContent="Einatmen";}
+      if(phase==="in"){phase="out";phaseStartAt=now();goPhase(false,col,s.exhale);phaseWord.textContent=s.outWord||"Ausatmen";}
+      else{phase="in";phaseStartAt=now();goPhase(true,col,s.inhale);phaseWord.textContent=s.inWord||"Einatmen";}
     }
   } else if(s.mode==="wavefollow"){
     const wp=WF_PHASES[waveSubPhase];
