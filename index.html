@@ -158,7 +158,7 @@
       </div>
     </div>
     <div class="bar-track"><div class="bar-fill" id="stepFill"></div></div>
-    <div class="times"><span id="stepTimeLeft">0:45</span><span id="totalTime">Gesamt 5:02</span></div>
+    <div class="times"><span id="stepTimeLeft">0:48</span><span id="totalTime">Gesamt 5:02</span></div>
     <div class="controls">
       <button id="playBtn">▶ Start</button>
       <button class="secondary" id="skipBtn">⏭ Weiter</button>
@@ -172,10 +172,10 @@
 
 <script>
 const steps=[
-{name:"Ruhig ankommen",instr:"Aufrecht sitzen oder stehen. Eine Hand auf den Bauch, eine auf die Brust. Durch die Nase ein und durch die Nase aus – nur die untere Hand bewegt sich, die Brust bleibt ruhig.",dur:45,emoji:"🌙",color:"#7f77dd",tint:"#eeedfe",mode:"pacer",inhale:3,exhale:6,inWord:"Einatmen · Nase",outWord:"Ausatmen · Nase"},
+{name:"Ruhig ankommen",instr:"Aufrecht sitzen oder stehen. Eine Hand auf den Bauch, eine auf die Brust. Durch die Nase ein und durch die Nase aus – nur die untere Hand bewegt sich, die Brust bleibt ruhig.",dur:48,emoji:"🌙",color:"#7f77dd",tint:"#eeedfe",mode:"pacer",inhale:3,exhale:3,inWord:"Einatmen · Nase",outWord:"Ausatmen · Nase"},
 {name:"Atem in den Rücken",instr:"Leicht nach vorne beugen, Hände auf die Oberschenkel. Durch die Nase einatmen und spüren, wie sich Rücken und Flanken weiten. Dann die Luft sanft durch den Mund ausströmen lassen.",dur:45,emoji:"↔️",color:"#378add",tint:"#e6f1fb",mode:"pacer",inhale:3,exhale:6,inWord:"Einatmen · Nase",outWord:"Ausatmen · Mund"},
-{name:"Ruhiger Luftstrom",instr:"Aufrecht, Hände seitlich an den Rippen. Durch die Nase einatmen, dann die Luft gleichmäßig und ohne Druck ausströmen lassen – wie durch einen Strohhalm. Die Schultern bleiben unten.",dur:60,emoji:"🌊",color:"#639922",tint:"#eaf3de",mode:"pacer",inhale:4,exhale:6,inWord:"Einatmen · Nase",outWord:"Ausatmen · Mund"},
-{name:"Papierflieger pusten",instr:"Durch die Nase einatmen, Bauch und Flanken weiten sich. Dann die Luft ganz sanft rausströmen lassen – Lippen bleiben locker geöffnet, nicht geschlossen.",dur:66,emoji:"✈️",color:"#ef9f27",tint:"#faeeda",mode:"pacer",inhale:4,exhale:7,inWord:"Einatmen · Nase",outWord:"Ausatmen · Mund"},
+{name:"Ruhiger Luftstrom",instr:"Aufrecht, Hände seitlich an den Rippen. Durch die Nase einatmen, dann die Luft gleichmäßig und ohne Druck ausströmen lassen – wie durch einen Strohhalm. Die Schultern bleiben unten.",dur:63,emoji:"🌊",color:"#639922",tint:"#eaf3de",mode:"pacer",inhale:3,exhale:6,inWord:"Einatmen · Nase",outWord:"Ausatmen · Mund"},
+{name:"Papierflieger pusten",instr:"Durch die Nase einatmen, Bauch und Flanken weiten sich. Dann die Luft ganz sanft rausströmen lassen – Lippen bleiben locker geöffnet, nicht geschlossen.",dur:60,emoji:"✈️",color:"#ef9f27",tint:"#faeeda",mode:"pacer",inhale:3,exhale:7,inWord:"Einatmen · Nase",outWord:"Ausatmen · Mund"},
 {name:"Bereit fürs Mundstück",instr:"Mundstück nehmen. Entspannt einatmen und die Luft sanft rausströmen lassen – Lippen bleiben locker, nicht geschlossen.",dur:30,emoji:"🌬️",color:"#d4537e",tint:"#fbeaf0",mode:"idle",preRoll:{text:"Mundstück bereit machen, gleich geht es weiter",icon:"⏳",dur:10}},
 {name:"Aufwärmen mit dem Mundstück",instr:"Lasse deinen Ton der Linie folgen.",dur:40,emoji:"🎵",color:"#1f9e9c",tint:"#e3f6f5",mode:"wavefollow"}
 ];
