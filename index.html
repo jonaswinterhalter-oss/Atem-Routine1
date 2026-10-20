@@ -54,7 +54,7 @@
     transform:scale(0.4); touch-action:manipulation;
   }
   .circle .phase{font-size:36px; line-height:1}
-  .idle .circle{animation:pulse 4.5s ease-in-out infinite}
+  .idle.on .circle{animation:pulse 4.5s ease-in-out infinite}
   @keyframes pulse{0%,100%{transform:scale(0.7)}50%{transform:scale(1.05)}}
   .wavebox-outer{display:none}
   .wavemode .circle-wrap{display:none}
@@ -179,7 +179,7 @@ const steps=[
 {name:"Bereit fürs Mundstück",instr:"Mundstück nehmen. Entspannt einatmen und die Luft sanft rausströmen lassen – Lippen bleiben locker, nicht geschlossen.",dur:30,emoji:"🌬️",color:"#d4537e",tint:"#fbeaf0",mode:"idle",preRoll:{text:"Mundstück bereit machen, gleich geht es weiter",icon:"⏳",dur:10}},
 {name:"Aufwärmen mit dem Mundstück",instr:"Lasse deinen Ton der Linie folgen.",dur:40,emoji:"🎵",color:"#1f9e9c",tint:"#e3f6f5",mode:"wavefollow"}
 ];
-let cur=0,running=false,mainTimer=null,phase="in",phaseStartAt=0,stepStartAt=0,pausedAt=0,inOverlay=false,overlayTimer=null;
+let pendingStart=true,cur=0,running=false,mainTimer=null,phase="in",phaseStartAt=0,stepStartAt=0,pausedAt=0,inOverlay=false,overlayTimer=null;
 function now(){return performance.now()/1000;}
 const circle=document.getElementById("circle"),phaseLabel=document.getElementById("phaseLabel"),
 stepName=document.getElementById("stepName"),stepInstr=document.getElementById("stepInstr"),
@@ -328,6 +328,7 @@ function goToStep(i){
 
 function loadStep(i){
   cur=i;const s=steps[i];
+  pendingStart=!running;
   stepStartAt=now();
   if(currentAnim){currentAnim.cancel();currentAnim=null;}
   stepName.textContent=s.name;stepInstr.textContent=s.instr;
@@ -346,8 +347,9 @@ function loadStep(i){
   if(s.mode==="pacer"){
     phase="in";
     circle.style.transform="scale(0.4)";
+    circle.style.boxShadow=shadowFor(s.color,false);
     phaseStartAt=now();
-    goPhase(true,s.color,s.inhale);
+    if(running) goPhase(true,s.color,s.inhale);
     phaseWord.textContent=s.inWord||"Einatmen";
   } else if(s.mode==="wavefollow"){
     card.classList.add("wavemode");
@@ -461,16 +463,26 @@ function tick(){
 }
 function play(){
   running=true;
-  if(pausedAt){
+  card.classList.add("on");
+  if(pendingStart){
+    // first press of Start for this step: the clock and the ball begin now
+    pendingStart=false;pausedAt=0;
+    const t0=now();stepStartAt=t0;phaseStartAt=t0;waveSubStartAt=t0;
+    const s0=steps[cur];
+    if(s0.mode==="pacer"){phase="in";goPhase(true,s0.color,s0.inhale);}
+  } else if(pausedAt){
     const gap=now()-pausedAt;
     phaseStartAt+=gap;stepStartAt+=gap;waveSubStartAt+=gap;
     pausedAt=0;
+    if(currentAnim) currentAnim.play();
   }
   playBtn.textContent="⏸ Pause";
   if(!mainTimer){mainTimer=setInterval(tick,100);}
 }
 function pause(){
   running=false;
+  card.classList.remove("on");
+  if(currentAnim) currentAnim.pause();
   pausedAt=now();
   playBtn.textContent="▶ Start";
   clearInterval(mainTimer);
