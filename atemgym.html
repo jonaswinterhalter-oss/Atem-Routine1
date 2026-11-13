@@ -161,6 +161,34 @@ details{margin-top:22px; background:var(--card); border:1px solid var(--line); b
 summary{font-weight:700; font-size:14px; cursor:pointer}
 details textarea{width:100%; min-height:80px; border:1px solid var(--line); border-radius:10px; padding:8px; font-size:12px; margin:8px 0; font-family:ui-monospace,Menlo,monospace; background:#fff; color:var(--ink)}
 .foot{margin-top:26px; font-size:12px; color:var(--muted); line-height:1.6}
+
+/* routines */
+.rEntry{display:flex; justify-content:space-between; align-items:center; gap:10px; width:100%; text-align:left;
+  background:var(--brass); color:#fff; border:none; border-radius:18px; padding:14px 16px; margin:0 0 16px; font-size:15px; font-weight:700}
+.rEntry small{display:block; font-weight:500; opacity:.9; font-size:12.5px; margin-top:2px}
+.h2{font-size:17px; font-weight:800; margin:22px 0 4px}
+.rGrid{display:grid; gap:10px; margin-top:10px}
+.rCard{display:block; width:100%; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px 14px; color:var(--ink)}
+.rCard b{display:block; font-size:15.5px; margin-bottom:2px}
+.rCard span{font-size:12.5px; color:var(--muted)}
+.rRow{display:flex; gap:8px; align-items:stretch}
+.rRow .rCard{flex:1}
+.rDel{border:1px solid var(--line); background:var(--card); color:var(--red); border-radius:14px; padding:0 12px; font-size:13px; font-weight:700; min-width:48px}
+.edItem{display:grid; grid-template-columns:1fr auto; gap:6px 10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line)}
+.edItem .nm{font-size:14.5px; font-weight:700}
+.edItem .du{font-size:12.5px; color:var(--muted)}
+.edItem select{grid-column:1; font:inherit; font-size:14px; padding:8px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--ink); max-width:100%; min-height:40px}
+.edItem .x{grid-column:2; grid-row:1 / span 2; border:1px solid var(--line); background:var(--card); border-radius:10px; min-width:44px; min-height:44px; font-size:16px; color:var(--muted)}
+.edAdd{display:flex; gap:8px; margin:12px 0}
+.edAdd select,.edName{flex:1; font:inherit; font-size:15px; padding:10px; border-radius:12px; border:1px solid var(--line); background:#fff; color:var(--ink); min-width:0; min-height:44px}
+.edName{width:100%; margin:6px 0 4px}
+.edTotal{font-size:15px; font-weight:800; margin:12px 0 4px}
+.rBanner{display:flex; justify-content:space-between; align-items:center; gap:10px; background:#F1E8D2; border-radius:14px; padding:9px 12px; font-size:13px; font-weight:700; color:#7A5A1E; margin-bottom:10px}
+.rBanner button{border:none; background:none; color:var(--brass); font-weight:700; font-size:13px; min-height:36px}
+.rnext{text-align:center; border-top:1px solid var(--line); margin-top:14px; padding-top:14px}
+.rnext h3{margin:0 0 4px; font-size:18px}
+.rnext p{margin:0 0 6px; font-size:14px; color:var(--muted); line-height:1.5}
+.rnext .big{font-size:44px; font-weight:800; color:var(--brass); font-variant-numeric:tabular-nums; line-height:1.1}
 </style>
 </head>
 <body>
@@ -171,6 +199,7 @@ details textarea{width:100%; min-height:80px; border:1px solid var(--line); bord
     <div class="eyebrow">Atemübungen für Bläserinnen und Bläser</div>
     <h1>Atem <span>Gym</span></h1>
     <p class="sub">Wähle einen Schwerpunkt oder stöbere durch alle Übungen. Viele Übungen haben mehrere Varianten, die du frei wählen kannst. Wiederholen lohnt sich.</p>
+    <button class="rEntry" id="btnRout" type="button"><span>Routinen<small>Mehrere Übungen am Stück: Vorlagen, automatisch oder selbst gebaut</small></span><span>→</span></button>
     <div class="chips" id="chips"></div>
     <div class="list" id="list"></div>
 
@@ -187,9 +216,53 @@ details textarea{width:100%; min-height:80px; border:1px solid var(--line); bord
     <p class="foot">Die Übungen sind inspiriert von <i>The Breathing Gym</i> (Sam Pilafian &amp; Patrick Sheridan, Focus on Excellence, 2002). Die Texte sind in eigenen Worten formuliert; dies ist keine offizielle Umsetzung. Das Buch lohnt sich. Die Übungen ersetzen keinen ärztlichen Rat. Bei Schwindel, Schmerzen oder Unwohlsein sofort aufhören und normal atmen.</p>
   </section>
 
+  <!-- ===== Routinen ===== -->
+  <section id="viewRout" hidden>
+    <button class="back" id="btnRoutBack" type="button">← Alle Übungen</button>
+    <div class="eyebrow">Mehrere Übungen am Stück</div>
+    <div class="pTitle">Routinen</div>
+    <p class="pDesc">Eine Routine spielt mehrere Übungen nacheinander ab, in der Reihenfolge des Buchs. Zwischen den Übungen hast du eine kurze Pause.</p>
+
+    <div class="h2">Automatisch zusammenstellen</div>
+    <p class="small">Wähle bis zu zwei Schwerpunkte und eine Dauer.</p>
+    <div class="chips" id="autoFoci"></div>
+    <div class="chips" id="autoDur"></div>
+    <button class="btn" id="btnAuto" type="button">Routine erstellen</button>
+    <p class="small" id="autoMsg"></p>
+
+    <div class="h2">Meine Routinen</div>
+    <div class="rGrid" id="myRout"></div>
+    <button class="btn sec" id="btnNewRout" type="button" style="margin-top:10px">+ Neue Routine bauen</button>
+
+    <div class="h2">Vorlagen nach dem Buch</div>
+    <p class="small">Zusammenstellungen nach der Übersichtstabelle in <i>The Breathing Gym</i>. Du kannst jede Vorlage vor dem Start anpassen.</p>
+    <div class="rGrid" id="tplRout"></div>
+  </section>
+
+  <!-- ===== Routine bearbeiten ===== -->
+  <section id="viewEdit" hidden>
+    <button class="back" id="btnEditBack" type="button">← Routinen</button>
+    <div class="eyebrow" id="edEyebrow">Routine</div>
+    <input class="edName" id="edName" type="text" maxlength="40" placeholder="Name der Routine" aria-label="Name der Routine">
+    <div class="card">
+      <div id="edItems"></div>
+      <div class="edAdd"><select id="edAddSel" aria-label="Übung hinzufügen"></select><button class="btn sec" id="btnEdAdd" type="button">+ Hinzufügen</button></div>
+      <div class="edTotal" id="edTotal"></div>
+      <p class="small" style="margin:0 0 6px">Varianten automatisch auf eine Dauer anpassen:</p>
+      <div class="chips" id="edFit" style="margin-bottom:6px"></div>
+      <button class="btn sec" id="btnEdOther" type="button" hidden>↻ Andere Auswahl</button>
+      <div class="ctrl" style="margin-top:12px">
+        <button class="btn" id="btnEdStart" type="button">▶ Routine starten</button>
+        <button class="btn sec" id="btnEdSave" type="button">Speichern</button>
+      </div>
+      <p class="small" id="edMsg" style="margin:8px 0 0"></p>
+    </div>
+  </section>
+
   <!-- ===== Player ===== -->
   <section id="viewPlay" hidden>
     <button class="back" id="btnBack" type="button">← Alle Übungen</button>
+    <div class="rBanner" id="rBanner" hidden><span id="rBannerText"></span><button id="btnSkip" type="button">Überspringen ⏭</button></div>
     <div class="eyebrow" id="pCat"></div>
     <div class="pTitle" id="pTitle"></div>
     <div class="small" id="pStats" style="margin-bottom:8px"></div>
@@ -237,6 +310,16 @@ details textarea{width:100%; min-height:80px; border:1px solid var(--line); bord
         <div class="ctrl">
           <button class="btn" id="btnAgain" type="button">Nochmal</button>
           <button class="btn sec" id="btnDone" type="button">Fertig</button>
+        </div>
+      </div>
+
+      <div class="rnext" id="rnext" hidden>
+        <h3>Kurze Pause</h3>
+        <p id="rnText"></p>
+        <div class="big" id="rnCount"></div>
+        <div class="ctrl">
+          <button class="btn" id="btnRnGo" type="button">Jetzt weiter</button>
+          <button class="btn sec" id="btnRnHold" type="button">Anhalten</button>
         </div>
       </div>
 
@@ -458,6 +541,8 @@ function q10(a,b){
     const tag="Wiederholung "+(i+1)+" von 4";
     out.push(P("out",a,{tag,cue:"Gleichmäßig ausatmen"}),P("in",b,{tag,cue:"Schnell einatmen, ohne Widerstand"}));
   }
+  // the last quick inhale only prepares the next repetition: finish with an exhale
+  out.push(P("out",a,{tag:"Abschluss",cue:"Zum Schluss noch einmal gleichmäßig ausatmen"}));
   return out;
 }
 const PAT11=[
@@ -650,6 +735,81 @@ const EX2=[
 EX2.forEach(e=>EXS.push(e));
 EXS.sort((a,b)=>a.num-b.num);
 
+/* ===== Routinen (Vorlagen nach der Übersichtstabelle des Buchs, ohne Dehnübungen) ===== */
+const GAP_SEC=8, AUTO_MAX_SEC=130;
+const TEMPLATES=[
+ {id:"t3",  name:"3-Minuten-Aufwärmen", nums:[1,2,3], min:3},
+ {id:"t5",  name:"5-Minuten-Aufwärmen", nums:[1,2,3,4,5,6], min:5},
+ {id:"t7",  name:"7-Minuten-Workout", nums:[1,2,3,4,13,18], min:7},
+ {id:"t10", name:"10-Minuten-Workout", nums:[1,2,3,4,5,6,8,9,12,13,14,18], min:10},
+ {id:"tmid",name:"Mitte der Probe: besser atmen, besserer Klang", nums:[4,5,6]},
+ {id:"tcalm",name:"Ruhe und Fokus vor dem Auftritt", nums:[1,2,17,18]},
+ {id:"tproj",name:"Großer Klang mit weniger Aufwand", nums:[11,12,14,15]},
+ {id:"tphr",name:"Besser atmen zwischen Phrasen", nums:[10]},
+ {id:"tleg",name:"Besseres Legato", nums:[2,11,18]},
+ {id:"tfor",name:"Dramatischeres Forte und Marcato", nums:[11,12,13,14]},
+ {id:"tsus",name:"Längerer, tragender Ton (Sustain)", nums:[8,9,10,13,18]},
+ {id:"ttec",name:"Leichtigkeit in technischen Passagen", nums:[8,10,11,17]},
+ {id:"trhy",name:"Rhythmus und Klangprojektion", nums:[11]}
+];
+function exByNum(n){ return EXS.find(e=>e.num===n); }
+function defDur(id,li){
+  const ex=EXS.find(e=>e.id===id), lv=ex.levels[li], bpm=lv.bpm||ex.bpm;
+  return buildTimeline(makeSession(ex,li,bpm)).total*60/bpm;
+}
+function routineSec(items,dur){
+  dur=dur||defDur;
+  return items.reduce((a,it)=>a+dur(it.id,it.li),0)+Math.max(0,items.length-1)*GAP_SEC;
+}
+function sortItems(items){
+  return items.map((it,i)=>({it,i})).sort((a,b)=>(EXS.find(e=>e.id===a.it.id).num-EXS.find(e=>e.id===b.it.id).num)||(a.i-b.i)).map(x=>x.it);
+}
+/* choose variants so that the routine comes close to targetSec */
+function fitVariants(items,targetSec,dur){
+  dur=dur||defDur;
+  items=items.map(it=>({id:it.id,li:it.li}));
+  for(let guard=0;guard<200;guard++){
+    const tot=routineSec(items,dur); let best=null, bestErr=Math.abs(tot-targetSec);
+    items.forEach((it,i)=>{
+      const ex=EXS.find(e=>e.id===it.id), cur=dur(it.id,it.li);
+      ex.levels.forEach((lv,j)=>{
+        if(j===it.li) return;
+        const d=dur(it.id,j); if(d>AUTO_MAX_SEC&&d>cur) return;
+        const err=Math.abs(tot-cur+d-targetSec);
+        if(err<bestErr-1){ bestErr=err; best=[i,j]; }
+      });
+    });
+    if(!best) break; items[best[0]].li=best[1];
+  }
+  return items;
+}
+function templateItems(t,dur){
+  let items=t.nums.map(n=>({id:exByNum(n).id,li:0}));
+  if(t.min) items=fitVariants(items,t.min*60,dur);
+  return items;
+}
+/* automatic routine: up to two foci, duration in minutes, offset rotates the selection */
+function autoRoutine(foci,min,offset,dur){
+  dur=dur||defDur; offset=offset||0;
+  const target=min*60;
+  const lists=foci.map(f=>EXS.filter(e=>e.focus.includes(f)));
+  const cand=[], seen=new Set(); const L=Math.max(0,...lists.map(l=>l.length));
+  for(let k=0;k<L;k++) lists.forEach(l=>{ if(l.length){ const e=l[(k+offset)%l.length]; if(k<l.length&&!seen.has(e.id)){ seen.add(e.id); cand.push(e); } } });
+  if(!cand.length) return [];
+  const short=id=>{ const ex=EXS.find(e=>e.id===id); let b=0,bd=Infinity; ex.levels.forEach((lv,j)=>{const d=dur(id,j); if(d<bd){bd=d;b=j;}}); return b; };
+  let items=[];
+  for(let pass=0;pass<3;pass++){
+    cand.forEach(e=>{
+      const it={id:e.id,li:pass%e.levels.length};
+      if(dur(it.id,it.li)>AUTO_MAX_SEC+20) it.li=short(e.id);
+      if(routineSec(items.concat([it]),dur)<=target*1.05) items.push(it);
+    });
+    if(routineSec(items,dur)>=target*0.8) break;
+  }
+  if(!items.length) items=[{id:cand[0].id,li:short(cand[0].id)}];
+  return fitVariants(sortItems(items),target,dur);
+}
+
 /* ===== Zeitleiste (in Counts) ===== */
 function makeSession(ex,li,bpm){
   return [P("prep",4,{label:"Einzählen",cue:"Gleich geht es los"})].concat(ex.levels[li].build(bpm||72));
@@ -709,13 +869,17 @@ function fmtT(s){s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String
 const $=id=>document.getElementById(id);
 const KEY="atemgym.v1";
 let DB={ex:{},click:true};
-function load(){try{const r=localStorage.getItem(KEY); if(r){const o=JSON.parse(r); if(o&&o.ex) DB=o;}}catch(e){}}
+function load(){try{const r=localStorage.getItem(KEY); if(r){const o=JSON.parse(r); if(o&&o.ex) DB=o;}}catch(e){} if(!Array.isArray(DB.routines)) DB.routines=[];}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
 function rec(id){ if(!DB.ex[id]) DB.ex[id]={level:0,count:0,last:null,bpm:null}; return DB.ex[id]; }
 
 const S={focus:"all",ex:null,lvl:0,bpm:72,click:true,status:"idle",tl:[],total:0,idx:0,shown:-1,
   startTs:0,base:0,raf:0,nextK:0,events:[],view:"circle",strip:null,stripIdx:-1,warnOK:false,lastCnt:"",lastRem:"",lastPct:-1};
 let actx=null, mTimer=null, wake=null;
+/* routine state: R = running routine, ED = routine in the editor, AU = automatic settings */
+const R={on:false,name:"",items:[],i:0,rid:null,timer:null,left:0};
+let ED={rid:null,name:"",items:[],auto:null};
+const AU={foci:[],min:5,offset:0};
 
 /* ---------- Übersicht ---------- */
 function renderChips(){
@@ -756,11 +920,11 @@ function statText(r){
   return t;
 }
 /* ---------- Player ---------- */
-function showView(v){ $("viewList").hidden=v!=="list"; $("viewPlay").hidden=v!=="play"; window.scrollTo(0,0); }
-function openEx(id){
+function showView(v){ ["List","Play","Rout","Edit"].forEach(n=>{ $("view"+n).hidden=v!==n.toLowerCase(); }); window.scrollTo(0,0); }
+function openEx(id,li){
   S.ex=EXS.find(e=>e.id===id);
   const r=rec(id);
-  S.lvl=Math.min(r.level||0,S.ex.levels.length-1);
+  S.lvl=Math.min(li!=null?li:(r.level||0),S.ex.levels.length-1);
   S.bpm=r.bpm||S.ex.bpm;
   S.click=DB.click!==false;
   S.warnOK=false;
@@ -796,7 +960,7 @@ function renderLevels(){
 }
 function levelBpm(){ const lv=S.ex.levels[S.lvl]; return lv.bpm||rec(S.ex.id).bpm||S.ex.bpm; }
 function selectLevel(i){
-  S.lvl=i; rec(S.ex.id).level=i; save();
+  S.lvl=i; if(!R.on){ rec(S.ex.id).level=i; save(); }
   S.bpm=levelBpm(); $("bpm").value=S.bpm;
   renderLevels(); prepare(); resetVisual();
 }
@@ -938,6 +1102,7 @@ function unlockWake(){ try{ if(wake){wake.release(); wake=null;} }catch(e){} }
 
 function start(){
   if(S.ex.warning && !S.warnOK) return;
+  clearNext();
   ensureAudio(); prepare();
   S.idx=0; S.shown=-1; S.nextK=0; S.lastCnt=""; S.lastPct=-1;
   S.startTs=now()+150; S.status="running";
@@ -958,6 +1123,7 @@ function resume(){
   S.status="running"; setMain(); startSched(); S.raf=requestAnimationFrame(tick);
 }
 function stopAll(){
+  clearNext();
   cancelAnimationFrame(S.raf); stopSched(); unlockWake();
   S.status="idle"; S.idx=0; S.shown=-1; setMain(); if(S.ex) resetVisual();
 }
@@ -972,7 +1138,153 @@ function finish(){
   $("pStats").textContent=statText(r);
   $("finishText").textContent="Gut gemacht! Atme jetzt ruhig und ganz normal weiter. Wiederholen lohnt sich: Was heute anstrengend ist, wird mit Übung leichter.";
   $("finish").hidden=false; setMain();
+  if(R.on){
+    if(R.i<R.items.length-1){ $("finish").hidden=true; showNext(); }
+    else{
+      $("finishText").textContent="Routine geschafft! Atme jetzt ruhig und ganz normal weiter.";
+      $("btnAgain").textContent="Routine nochmal";
+      const sr=R.rid&&DB.routines.find(x=>x.id===R.rid);
+      if(sr){ sr.count=(sr.count||0)+1; sr.last=new Date().toISOString(); save(); }
+    }
+  }
 }
+
+/* ---------- Routinen ---------- */
+function itemDur(id,li){
+  const ex=EXS.find(e=>e.id===id), lv=ex.levels[li], bpm=lv.bpm||rec(id).bpm||ex.bpm;
+  return buildTimeline(makeSession(ex,li,bpm)).total*60/bpm;
+}
+function fmtMin(sec){ return "etwa "+fmtT(Math.round(sec))+" Min."; }
+function numsText(items){ return "Übungen "+items.map(it=>EXS.find(e=>e.id===it.id).num).join(" · "); }
+function chipBtn(box,label,on,fn){
+  const b=document.createElement("button"); b.type="button"; b.className="chip"+(on?" on":""); b.textContent=label;
+  b.addEventListener("click",fn); box.appendChild(b); return b;
+}
+function renderRout(){
+  const fb=$("autoFoci"); fb.innerHTML="";
+  FOCI.forEach(f=>{
+    if(!EXS.some(e=>e.focus.includes(f.id))) return;
+    chipBtn(fb,f.name,AU.foci.includes(f.id),()=>{
+      const k=AU.foci.indexOf(f.id);
+      if(k>=0) AU.foci.splice(k,1); else{ AU.foci.push(f.id); if(AU.foci.length>2) AU.foci.shift(); }
+      renderRout();
+    });
+  });
+  const db=$("autoDur"); db.innerHTML="";
+  [3,5,7,10].forEach(m=>chipBtn(db,m+" Min.",AU.min===m,()=>{ AU.min=m; renderRout(); }));
+  $("btnAuto").disabled=!AU.foci.length;
+  $("autoMsg").textContent=AU.foci.length?"":"Bitte mindestens einen Schwerpunkt wählen.";
+  const mb=$("myRout"); mb.innerHTML="";
+  if(!DB.routines.length){ const p=document.createElement("p"); p.className="small"; p.textContent="Noch keine eigene Routine gespeichert."; mb.appendChild(p); }
+  DB.routines.forEach(r=>{
+    const items=validItems(r.items);
+    const row=document.createElement("div"); row.className="rRow";
+    const b=document.createElement("button"); b.type="button"; b.className="rCard";
+    const t=document.createElement("b"); t.textContent=r.name; b.appendChild(t);
+    const sp=document.createElement("span");
+    sp.textContent=numsText(items)+" · "+fmtMin(routineSec(items,itemDur))+(r.count?" · "+r.count+"× geübt":"");
+    b.appendChild(sp);
+    b.addEventListener("click",()=>openEdit({rid:r.id,name:r.name,items:items.map(x=>({id:x.id,li:x.li})),auto:null}));
+    const d=document.createElement("button"); d.type="button"; d.className="rDel"; d.textContent="✕"; d.setAttribute("aria-label","Routine löschen");
+    d.addEventListener("click",()=>{
+      if(d.dataset.sure){ DB.routines=DB.routines.filter(x=>x.id!==r.id); save(); renderRout(); }
+      else{ d.dataset.sure="1"; d.textContent="Löschen?"; setTimeout(()=>{ delete d.dataset.sure; d.textContent="✕"; },3000); }
+    });
+    row.appendChild(b); row.appendChild(d); mb.appendChild(row);
+  });
+  const tb=$("tplRout"); tb.innerHTML="";
+  TEMPLATES.forEach(t=>{
+    const items=templateItems(t,itemDur);
+    const b=document.createElement("button"); b.type="button"; b.className="rCard";
+    const h=document.createElement("b"); h.textContent=t.name; b.appendChild(h);
+    const sp=document.createElement("span"); sp.textContent=numsText(items)+" · "+fmtMin(routineSec(items,itemDur)); b.appendChild(sp);
+    b.addEventListener("click",()=>openEdit({rid:null,name:t.name,items,auto:null}));
+    tb.appendChild(b);
+  });
+}
+function validItems(items){
+  return (items||[]).filter(it=>EXS.some(e=>e.id===it.id)).map(it=>({id:it.id,li:Math.min(it.li||0,EXS.find(e=>e.id===it.id).levels.length-1)}));
+}
+function autoName(){ return AU.foci.map(f=>FOCI.find(x=>x.id===f).name).join(" + ")+" · "+AU.min+" Min."; }
+function openEdit(ed){
+  ED=ed; $("edName").value=ED.name||""; $("edMsg").textContent="";
+  $("edEyebrow").textContent=ED.rid?"Meine Routine":(ED.auto?"Automatische Routine":"Routine");
+  const sel=$("edAddSel"); sel.innerHTML="";
+  EXS.forEach(e=>{ const o=document.createElement("option"); o.value=e.id; o.textContent=e.num+" · "+e.name; sel.appendChild(o); });
+  renderEdit(); showView("edit");
+}
+function renderEdit(){
+  const box=$("edItems"); box.innerHTML="";
+  if(!ED.items.length){ const p=document.createElement("p"); p.className="small"; p.textContent="Noch keine Übung. Füge unten Übungen hinzu."; box.appendChild(p); }
+  ED.items.forEach((it,i)=>{
+    const ex=EXS.find(e=>e.id===it.id);
+    const row=document.createElement("div"); row.className="edItem";
+    const nm=document.createElement("div"); nm.className="nm"; nm.textContent=ex.num+" · "+ex.name;
+    const du=document.createElement("span"); du.className="du"; du.textContent="  "+fmtT(Math.round(itemDur(it.id,it.li)));
+    nm.appendChild(du); row.appendChild(nm);
+    const x=document.createElement("button"); x.type="button"; x.className="x"; x.textContent="✕"; x.setAttribute("aria-label",ex.name+" entfernen");
+    x.addEventListener("click",()=>{ ED.items.splice(i,1); renderEdit(); });
+    row.appendChild(x);
+    if(ex.levels.length>1){
+      const s=document.createElement("select"); s.setAttribute("aria-label","Variante für "+ex.name);
+      ex.levels.forEach((lv,j)=>{ const o=document.createElement("option"); o.value=j; o.textContent="Variante "+(lv.tag||j+1)+" · "+fmtT(Math.round(itemDur(it.id,j))); if(j===it.li) o.selected=true; s.appendChild(o); });
+      s.addEventListener("change",()=>{ it.li=+s.value; renderEdit(); });
+      row.appendChild(s);
+    }
+    box.appendChild(row);
+  });
+  $("edTotal").textContent=ED.items.length?("Gesamt "+fmtMin(routineSec(ED.items,itemDur))+" · "+ED.items.length+(ED.items.length===1?" Übung":" Übungen")):"";
+  const fb=$("edFit"); fb.innerHTML="";
+  [3,5,7,10].forEach(m=>chipBtn(fb,m+" Min.",false,()=>{
+    if(!ED.items.length) return;
+    ED.items=fitVariants(ED.items,m*60,itemDur); renderEdit();
+    const tot=routineSec(ED.items,itemDur);
+    $("edMsg").textContent=Math.abs(tot-m*60)>45?"Mit diesen Übungen sind "+m+" Minuten nicht genau erreichbar. Füge Übungen hinzu oder entferne welche.":"Varianten angepasst.";
+  }));
+  $("btnEdOther").hidden=!ED.auto;
+  $("btnEdStart").disabled=!ED.items.length; $("btnEdSave").disabled=!ED.items.length;
+}
+function autoNote(){
+  const tot=routineSec(ED.items,itemDur);
+  $("edMsg").textContent=(ED.auto&&ED.auto.min*60-tot>45)?"Für diese Auswahl gibt es nur wenige Übungen, deshalb ist die Routine kürzer als "+ED.auto.min+" Minuten. Ein zweiter Schwerpunkt oder weitere Übungen füllen sie auf.":"";
+}
+function saveEdit(){
+  const name=($("edName").value||"").trim();
+  if(!name){ $("edMsg").textContent="Bitte gib der Routine einen Namen."; $("edName").focus(); return; }
+  const items=ED.items.map(it=>({id:it.id,li:it.li}));
+  let r=ED.rid&&DB.routines.find(x=>x.id===ED.rid);
+  if(r){ r.name=name; r.items=items; }
+  else{ r={id:"r"+Date.now().toString(36),name,items,count:0,last:null}; DB.routines.push(r); ED.rid=r.id; }
+  ED.name=name; save(); $("edEyebrow").textContent="Meine Routine"; $("edMsg").textContent="Gespeichert unter „Meine Routinen“.";
+}
+function startRoutine(){
+  if(!ED.items.length) return;
+  R.on=true; R.name=($("edName").value||"").trim()||"Routine"; R.items=ED.items.map(it=>({id:it.id,li:it.li})); R.i=0; R.rid=ED.rid;
+  playItem(true);
+}
+function playItem(first){
+  clearNext();
+  const it=R.items[R.i];
+  openEx(it.id,it.li);
+  $("rBanner").hidden=false; $("rBannerText").textContent=R.name+" · Übung "+(R.i+1)+" von "+R.items.length;
+  $("btnSkip").hidden=R.i>=R.items.length-1;
+  $("btnBack").textContent="← Routine beenden"; $("btnAgain").textContent="Nochmal";
+  if(!first){ try{ $("rBanner").scrollIntoView({block:"start"}); }catch(e){} }
+  if(!S.ex.warning) start();
+}
+function endRoutine(){
+  clearNext(); R.on=false; $("rBanner").hidden=true; $("btnBack").textContent="← Alle Übungen"; $("btnAgain").textContent="Nochmal";
+}
+function showNext(){
+  const it=R.items[R.i+1], ex=EXS.find(e=>e.id===it.id), lv=ex.levels[it.li];
+  $("rnText").textContent="Atme ruhig weiter. Als Nächstes: "+ex.name+(ex.levels.length>1?" (Variante "+(lv.tag||it.li+1)+")":"")+". "+(ex.hint||"");
+  R.left=GAP_SEC; $("rnCount").textContent=R.left; $("btnRnHold").hidden=false; $("rnext").hidden=false;
+  lockWake();
+  R.timer=setInterval(()=>{ R.left--; if(R.left<=0){ nextItem(); } else $("rnCount").textContent=R.left; },1000);
+}
+function holdNext(){ if(R.timer){ clearInterval(R.timer); R.timer=null; } $("rnCount").textContent="⏸"; $("btnRnHold").hidden=true; }
+function clearNext(){ if(R.timer){ clearInterval(R.timer); R.timer=null; } $("rnext").hidden=true; }
+function nextItem(){ if(!R.on||R.i>=R.items.length-1) return; clearNext(); cancelAnimationFrame(S.raf); stopSched(); S.status="idle"; R.i++; playItem(false); }
 function onMain(){
   if(S.status==="running") pause();
   else if(S.status==="paused") resume();
@@ -981,7 +1293,7 @@ function onMain(){
 
 /* ---------- Fortschritt Export/Import ---------- */
 function exportCode(){
-  const o={app:"atem-gym",v:1,ex:DB.ex,click:DB.click!==false};
+  const o={app:"atem-gym",v:1,ex:DB.ex,click:DB.click!==false,routines:DB.routines};
   return "AG1:"+btoa(unescape(encodeURIComponent(JSON.stringify(o))));
 }
 function importCode(code){
@@ -996,6 +1308,13 @@ function importCode(code){
     a.level=Math.max(a.level||0,b.level||0);
     if(!a.bpm&&b.bpm) a.bpm=b.bpm;
   });
+  (Array.isArray(o.routines)?o.routines:[]).forEach(r=>{
+    if(!r||!r.id||typeof r.name!=="string") return;
+    const items=validItems(r.items); if(!items.length) return;
+    const a=DB.routines.find(x=>x.id===r.id);
+    if(a){ a.count=Math.max(a.count||0,r.count||0); if(r.last&&(!a.last||r.last>a.last)) a.last=r.last; }
+    else DB.routines.push({id:String(r.id),name:r.name.slice(0,40),items,count:r.count||0,last:r.last||null});
+  });
   save();
 }
 
@@ -1003,11 +1322,43 @@ function importCode(code){
 function init(){
   load();
   renderChips(); renderList();
-  $("btnBack").addEventListener("click",()=>{ stopAll(); renderList(); showView("list"); });
+  $("btnBack").addEventListener("click",()=>{
+    stopAll();
+    if(R.on){ endRoutine(); renderRout(); showView("rout"); } else { renderList(); showView("list"); }
+  });
+  $("btnRout").addEventListener("click",()=>{ renderRout(); showView("rout"); });
+  $("btnRoutBack").addEventListener("click",()=>{ renderList(); showView("list"); });
+  $("btnEditBack").addEventListener("click",()=>{ renderRout(); showView("rout"); });
+  $("btnAuto").addEventListener("click",()=>{
+    if(!AU.foci.length) return; AU.offset=0;
+    openEdit({rid:null,name:autoName(),items:autoRoutine(AU.foci,AU.min,0,itemDur),auto:{foci:AU.foci.slice(),min:AU.min}});
+    autoNote();
+  });
+  $("btnEdOther").addEventListener("click",()=>{
+    if(!ED.auto) return; AU.offset++;
+    ED.items=autoRoutine(ED.auto.foci,ED.auto.min,AU.offset,itemDur); renderEdit(); autoNote();
+  });
+  $("btnNewRout").addEventListener("click",()=>openEdit({rid:null,name:"",items:[],auto:null}));
+  $("btnEdAdd").addEventListener("click",()=>{
+    const id=$("edAddSel").value; if(!id) return;
+    const li=Math.min(rec(id).level||0,EXS.find(e=>e.id===id).levels.length-1);
+    ED.items=sortItems(ED.items.concat([{id,li}])); renderEdit();
+  });
+  $("btnEdSave").addEventListener("click",saveEdit);
+  $("btnEdStart").addEventListener("click",startRoutine);
+  $("btnSkip").addEventListener("click",nextItem);
+  $("btnRnGo").addEventListener("click",nextItem);
+  $("btnRnHold").addEventListener("click",holdNext);
   $("btnMain").addEventListener("click",onMain);
   $("btnStop").addEventListener("click",()=>{ stopAll(); });
-  $("btnAgain").addEventListener("click",()=>{ stopAll(); start(); });
-  $("btnDone").addEventListener("click",()=>{ stopAll(); renderList(); showView("list"); });
+  $("btnAgain").addEventListener("click",()=>{
+    stopAll();
+    if(R.on&&R.i>=R.items.length-1&&R.items.length>1){ R.i=0; playItem(true); } else start();
+  });
+  $("btnDone").addEventListener("click",()=>{
+    stopAll();
+    if(R.on){ endRoutine(); renderRout(); showView("rout"); } else { renderList(); showView("list"); }
+  });
   $("bpm").addEventListener("input",e=>{
     if(S.status==="running"||S.status==="paused") return;
     S.bpm=+e.target.value; rec(S.ex.id).bpm=S.bpm; save(); prepare();
@@ -1017,7 +1368,7 @@ function init(){
     if(S.click){ ensureAudio(); if(S.status==="running"){ const beat=60/S.bpm; S.nextK=evIndexFrom(Math.max(0,(now()-S.startTs)/1000)/beat); } }
   });
   $("warnCheck").addEventListener("change",e=>{ S.warnOK=e.target.checked; updateMainEnabled(); });
-  document.addEventListener("visibilitychange",()=>{ if(document.hidden&&S.status==="running") pause(); });
+  document.addEventListener("visibilitychange",()=>{ if(document.hidden){ if(S.status==="running") pause(); if(R.timer) holdNext(); } });
   $("btnExport").addEventListener("click",()=>{ $("codeBox").value=exportCode(); $("codeMsg").textContent="Code erzeugt. Kopiere ihn und speichere ihn z. B. in einer Notiz."; });
   $("btnCopy").addEventListener("click",()=>{
     const t=$("codeBox"); t.select();
@@ -1029,7 +1380,7 @@ function init(){
   });
 }
 init();
-window.__ag={EXS,FOCI,S,buildTimeline,makeSession,levelAt,beatInfo};
+window.__ag={EXS,FOCI,S,R,TEMPLATES,buildTimeline,makeSession,levelAt,beatInfo,autoRoutine,fitVariants,templateItems,routineSec};
 </script>
 </body>
 </html>
